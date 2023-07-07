@@ -40,6 +40,7 @@ module cpu_core (
 
     /*译码*/
     cpu_idu cpu_idu_inst(
+        .clk            (clk),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs1            (rs1),
@@ -53,8 +54,8 @@ module cpu_core (
         .imm1           (imm1)
     );
     reg     [15:0]      pc_now_ex;
-    always @(*) begin
-        pc_now_ex = pc_now;
+    always @(posedge clk) begin
+        pc_now_ex <= pc_now;
     end
 
 
@@ -63,15 +64,16 @@ module cpu_core (
     assign  in1 = jmp_en[1] ? pc_now_ex : (imm_en[1] ? imm1 : id_data1);
     assign  in2 = imm_en[0] ? imm0 : id_data2;
     cpu_exu cpu_exu_inst(
+        .clk            (clk),
         .alu_ctrl       (alu_ctrl),
         .in1            (in1),
         .in2            (in2),
         .out            (out)
     );
     reg     [31:0]      ex_data2;
-    always @(*) begin
-        ex_data2 = id_data2;
-        ex_ram_ctrl = ram_ctrl;
+    always @(posedge clk) begin
+        ex_data2 <= id_data2;
+        ex_ram_ctrl <= ram_ctrl;
     end
 
 
@@ -81,22 +83,30 @@ module cpu_core (
     assign  ram_din = ex_data2;
     reg     [15:0]      ma_ram_ctrl;
     reg     [31:0]      ma_out;
-    always @(*) begin
-        ma_ram_ctrl = ex_ram_ctrl;
-        ma_out = out;
+    always @(posedge clk) begin
+        ma_ram_ctrl <= ex_ram_ctrl;
+        ma_out <= out;
     end
 
 
     /*写回*/
     /*译码+执行+访存 控制 写回*/
+    reg     [4:0]       ex_rd, ma_rd;
+    reg                 ex_wr_en, ma_wr_en;
+    always @(posedge clk) begin
+        ex_rd <= rd;
+        ma_rd <= ex_rd;
+        ex_wr_en <= wr_en;
+        ma_wr_en <= ex_wr_en;
+    end
     assign  data_rd = ma_ram_ctrl[0] ? ram_dout : ma_out;
     cpu_reg cpu_reg_inst(
         .clk            (clk),
         .rst_n          (rst_n),
         .rs1            (rs1),
         .rs2            (rs2),
-        .rd             (rd),
-        .wr_en          (wr_en),
+        .rd             (ma_rd),
+        .wr_en          (ma_wr_en),
         .data_rd        (data_rd),
         .data1          (id_data1),
         .data2          (id_data2)
