@@ -42,7 +42,7 @@ module tb_cpu_core();
             start_flag <= 1'b1;
         #20
             start_flag <= 1'b0;
-        #880
+        #1880
             $stop;
     end
 

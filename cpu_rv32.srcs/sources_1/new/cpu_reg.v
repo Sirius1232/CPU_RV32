@@ -12,7 +12,6 @@
 module cpu_reg (
         input               clk,
         input               rst_n,
-        input               running,
         input       [4:0]   rs1,
         input       [4:0]   rs2,
         input       [4:0]   rd,
@@ -38,7 +37,7 @@ module cpu_reg (
                 register[i] <= 32'd0;
             end
         end
-        else if(running & wr_en) begin
+        else if(wr_en) begin
             if(rd==0)
                 register[0] <= 32'd0;
             else

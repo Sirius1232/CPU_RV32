@@ -75,9 +75,9 @@ module cpu_rv32 (
         .clk            (clk),
         .rst_n          (rst_n),
         .running        (running),
-        .pc_next        (pc),
+        .pc             (pc),
         .instruction    (instruction),
-        .ram_ctrl       (ram_ctrl),
+        .ex_ram_ctrl    (ram_ctrl),
         .addr_data      (addr_d),
         .ram_dout       (ram_dout),
         .ram_din        (ram_din)

@@ -16,8 +16,8 @@ module cpu_ifu (
         input       [1:0]   jump_flag,  // [1]:寄存器链接；[0]:跳转标志
         input       [31:0]  jump_rs,
         input       [31:0]  jump_imm,
-        output  reg [15:0]  pc,  // 程序计数器
-        output  reg [15:0]  pc_next
+        output  reg [15:0]  pc_now,  // 程序计数器
+        output  reg [15:0]  pc
     );
 
     reg                 running_d;
@@ -36,24 +36,24 @@ module cpu_ifu (
 
     always @(*) begin
         if(~pc_move)  // 为了修复第一条指令无法取出的问题
-            pc_next = 16'd0;
+            pc = 16'd0;
         else if(jump_flag[0]) begin
             if(jump_flag[1])
-                pc_next = jump_rs + jump_imm;
+                pc = jump_rs + jump_imm;
             else
-                pc_next = pc + jump_imm;
+                pc = pc_now + jump_imm;
         end
         else
-            pc_next = pc + 16'd4;
+            pc = pc_now + 16'd4;
     end
 
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n)
-            pc <= 16'd0;
+            pc_now <= 16'd0;
         else if(pc_move)
-            pc <= pc_next;
+            pc_now <= pc;
         else
-            pc <= pc;
+            pc_now <= pc_now;
     end
 
 
