@@ -1,6 +1,6 @@
 module ram_data (
         input               clk,
-        output      [4:0]   ram_ctrl,
+        input       [4:0]   ram_ctrl,
         input       [31:0]  addr,
         input       [31:0]  wr_data,
         output  reg [31:0]  rd_data
