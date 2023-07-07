@@ -14,11 +14,13 @@ module cpu_reg (
         input               rst_n,
         input       [4:0]   rs1,
         input       [4:0]   rs2,
+        input       [4:0]   jmp_rs,
         input       [4:0]   rd,
         input               wr_en,
         input       [31:0]  data_rd,
         output      [31:0]  data1,
-        output      [31:0]  data2
+        output      [31:0]  data2,
+        output      [31:0]  jmp_data
     );
 
     integer i;
@@ -30,6 +32,7 @@ module cpu_reg (
 
     assign  data1 = register[rs1];
     assign  data2 = register[rs2];
+    assign  jmp_data = register[jmp_rs];
 
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin

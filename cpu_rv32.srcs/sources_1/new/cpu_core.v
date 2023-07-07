@@ -21,6 +21,8 @@ module cpu_core (
     wire                wr_en;
     wire    [2:0]       jmp_en;
     wire    [4:0]       ram_ctrl;
+    wire    [4:0]       jmp_rs;
+    wire    [31:0]      jmp_data;
 
 
     /*取指*/
@@ -30,11 +32,11 @@ module cpu_core (
         .clk            (clk),
         .rst_n          (rst_n),
         .running        (running),
-        .jump_flag      (jump_flag),
-        .jump_rs        (id_data1),
-        .jump_imm       (imm1),
+        .jmp_rs         (jmp_rs),
+        .jmp_data       (jmp_data),
         .pc_now         (pc_now),
-        .pc             (pc)
+        .pc             (pc),
+        .instruction    (instruction)
     );
 
 
@@ -105,11 +107,13 @@ module cpu_core (
         .rst_n          (rst_n),
         .rs1            (rs1),
         .rs2            (rs2),
+        .jmp_rs         (jmp_rs),
         .rd             (ma_rd),
         .wr_en          (ma_wr_en),
         .data_rd        (data_rd),
         .data1          (id_data1),
-        .data2          (id_data2)
+        .data2          (id_data2),
+        .jmp_data       (jmp_data)
     );
 
 
