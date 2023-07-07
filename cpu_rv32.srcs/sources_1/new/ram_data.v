@@ -7,10 +7,9 @@ module ram_data (
     );
 
     wire                enable;
-    wire                wr_en, rd_en;
+    wire                wr_en;
     assign  enable = ram_ctrl[0];
     assign  wr_en = ram_ctrl[1];
-    assign  rd_en = ~ram_ctrl[1];
 
     reg     [31:0]      din;
     wire    [31:0]      dout;
@@ -35,16 +34,13 @@ module ram_data (
         endcase
     end
 
-    dram dram_inst (  // porta为写端口，portb为读端口
+    dram dram_inst (
         .clka       (clk),
         .ena        (enable),
         .wea        (wr_en),
         .addra      (addr[7:0]),
         .dina       (din),
-        .clkb       (clk),
-        .enb        (enable),
-        .addrb      (addr[7:0]),
-        .doutb      (dout)
+        .douta      (dout)
     );
 
 

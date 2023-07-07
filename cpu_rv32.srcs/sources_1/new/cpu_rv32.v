@@ -6,6 +6,7 @@ module cpu_rv32 (
         input       [31:0]  instr_load
     );
 
+    `define     STOP    7'b1111100
 
     wire    [15:0]      pc;
     wire    [31:0]      instruction;
@@ -15,7 +16,6 @@ module cpu_rv32 (
     localparam  IDLE = 4'd0;
     localparam  LOAD = 4'd1;
     localparam  RUN  = 4'd2;
-    
     /*State Machine*/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -30,13 +30,13 @@ module cpu_rv32 (
                         state <= IDLE;
                 end
                 LOAD : begin
-                    if(instr_load[6:0] == 7'b1111100)
+                    if(instr_load[6:0] == `STOP)
                         state <= RUN;
                     else
                         state <= LOAD;
                 end
                 RUN : begin
-                    if(instruction[6:0] == 7'b1111100)
+                    if(instruction[6:0] == `STOP)
                         state <= IDLE;
                     else
                         state <= RUN;

@@ -4,7 +4,7 @@ module cpu_core (
         input               running,
         output      [15:0]  pc_next,
         input       [31:0]  instruction,
-        output      [4:0]   ram_ctrl,
+        output      [4:0]   ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
         output      [31:0]  addr_data,
         input       [31:0]  ram_dout,
         output      [31:0]  ram_din
@@ -21,7 +21,7 @@ module cpu_core (
     wire                wr_en;
     wire    [2:0]       jmp_en;
 
-    assign  addr_data = out;
+    assign  addr_data = ram_ctrl[0] ? out : 32'hzzzz;
     assign  ram_din = data2;
 
     assign  data_rd = ram_ctrl[0] ? ram_dout : out;

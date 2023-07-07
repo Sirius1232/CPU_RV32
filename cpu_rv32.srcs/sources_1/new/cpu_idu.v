@@ -15,13 +15,12 @@ module cpu_idu (
         // input               clk,
         // input               rst_n,
         input       [31:0]  instruction,
-        /*执行控制信号*/
-        output  reg [4:0]   alu_ctrl,
         /*寄存器地址*/
         output      [4:0]   rs1,
         output      [4:0]   rs2,
         output      [4:0]   rd,
-        /*部分功能使能信号*/
+        /*功能使能、控制信号*/
+        output  reg [4:0]   alu_ctrl,  // 运算单元控制
         output  reg         wr_en,  // 通用寄存器写使能
         output  reg [2:0]   jmp_en,  // 指令跳转功能使能（[2]:寄存器链接，[1]:无条件跳转，[0]:条件分支）
         output  reg [4:0]   ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
@@ -44,6 +43,7 @@ module cpu_idu (
     //*****************************************************
     //**                    main code
     //*****************************************************
+    /*指令拆分*/
     assign  opcode = instruction[6:0];
     assign  funct3 = instruction[14:12];
     assign  funct7 = instruction[31:25];
@@ -60,25 +60,15 @@ module cpu_idu (
     always @(*) begin
         case (opcode)
             `OP     : begin  // 基础整数运算-寄存器
-                case (funct7)
-                    `BASE : begin
-                        case (funct3)
-                            `ADD    : alu_ctrl = `ALU_ADD;
-                            `SLL    : alu_ctrl = `ALU_SLL;
-                            `SLT    : alu_ctrl = `ALU_LT;
-                            `SLTU   : alu_ctrl = `ALU_LTU;
-                            `XOR    : alu_ctrl = `ALU_XOR;
-                            `SRL    : alu_ctrl = `ALU_SRL;
-                            `OR     : alu_ctrl = `ALU_OR;
-                            `AND    : alu_ctrl = `ALU_AND;
-                        endcase
-                    end
-                    `SPEC : begin
-                        case (funct3)
-                            `SUB    : alu_ctrl = `ALU_SUB;  //减法
-                            `SRA    : alu_ctrl = `ALU_SRA;
-                        endcase
-                    end
+                case (funct3)
+                    `ADD    : alu_ctrl = (funct7==`BASE) ? `ALU_ADD : `ALU_SUB;
+                    `SLL    : alu_ctrl = `ALU_SLL;
+                    `SLT    : alu_ctrl = `ALU_LT;
+                    `SLTU   : alu_ctrl = `ALU_LTU;
+                    `XOR    : alu_ctrl = `ALU_XOR;
+                    `SRL    : alu_ctrl = (funct7==`BASE) ? `ALU_SRL : `ALU_SRA;
+                    `OR     : alu_ctrl = `ALU_OR;
+                    `AND    : alu_ctrl = `ALU_AND;
                 endcase
             end
             `OP_IMM : begin   // 基础整数运算-立即数
@@ -115,7 +105,7 @@ module cpu_idu (
         endcase
     end
 
-    /*imm*/
+    /**/
     always @(*) begin
         case (opcode)
             `OP     : begin  // 基础整数运算-寄存器
@@ -132,7 +122,7 @@ module cpu_idu (
                 ram_ctrl = 5'b00000;
                 imm_en = 2'b01;
                 imm1 = 32'd0;
-                if(funct7==`BASE && funct3!=`SLTU)
+                if(funct3!=`SLTU)
                     imm0 = {{20{imm_i[11]}}, imm_i};
                 else
                     imm0 = imm_i;
@@ -150,7 +140,7 @@ module cpu_idu (
                 jmp_en = 3'b010;
                 ram_ctrl = 5'b00000;
                 imm_en = 2'b01;
-                imm1 = {{12{imm_j[19]}}, imm_j};
+                imm1 = {{11{imm_j[19]}}, imm_j, 1'b0};  // 末尾补0相当于左移一位
                 imm0 = 32'd4;
             end
             `JALR   : begin
@@ -166,7 +156,7 @@ module cpu_idu (
                 jmp_en = 3'b001;
                 ram_ctrl = 5'b00000;
                 imm_en = 2'b00;
-                imm1 = {{20{imm_b[11]}}, imm_b};
+                imm1 = {{19{imm_b[11]}}, imm_b, 1'b0};  // 末尾补0相当于左移一位
                 imm0 = 32'd0;
             end
             `LOAD   : begin
