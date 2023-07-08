@@ -93,7 +93,7 @@ module cpu_rv32 (
     );
 
     ram_data ram_data_inst(
-        .clk            (~clk),
+        .clk            (clk),
         .ram_ctrl       (ram_ctrl),
         .addr           (addr_d),
         .wr_data        (ram_din),

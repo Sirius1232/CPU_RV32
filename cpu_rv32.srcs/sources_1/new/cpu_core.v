@@ -7,7 +7,7 @@ module cpu_core (
         output  reg [4:0]   ex_ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
         output      [31:0]  addr_data,
         input       [31:0]  ram_dout,
-        output      [31:0]  ram_din
+        output  reg [31:0]  ram_din
     );
 
     wire    [15:0]      pc_now;
@@ -27,6 +27,8 @@ module cpu_core (
     reg                 branch_flag;
     reg                 flush_flag;
 
+    reg     [4:0]       ex_rd, ma_rd;
+    reg     [31:0]      ma_out;
 
     /*取指*/
     /*译码+执行 控制 取指*/
@@ -71,8 +73,25 @@ module cpu_core (
 
     /*执行*/
     /*取指+译码 控制 执行*/
-    assign  in1 = jmp_en[1] ? pc_now_ex : (imm_en[1] ? imm1 : id_data1);
-    assign  in2 = imm_en[0] ? imm0 : id_data2;
+    reg     [31:0]      data1, data2;
+    always @(*) begin
+        if(rs1==ex_rd)
+            data1 = out;
+        else if(rs1==ma_rd)
+            data1 = ma_out;
+        else
+            data1 = id_data1;
+    end
+    always @(*) begin
+        if(rs2==ex_rd)
+            data2 = out;
+        else if(rs2==ma_rd)
+            data2 = ma_out;
+        else
+            data2 = id_data2;
+    end
+    assign  in1 = jmp_en[1] ? pc_now_ex : (imm_en[1] ? imm1 : data1);
+    assign  in2 = imm_en[0] ? imm0 : data2;
     cpu_exu cpu_exu_inst(
         .clk            (clk),
         .flush_flag     (flush_flag),
@@ -105,10 +124,19 @@ module cpu_core (
 
     /*访存*/
     /*译码+执行 控制 访存*/
+    reg     [4:0]       ex_rs2;
+    always @(posedge clk) begin
+        ex_rs2 <= rs2;
+    end
+    always @(*) begin
+        if(ex_rs2==ma_rd)
+            ram_din = ma_out;
+        else
+            ram_din = ex_data2;
+    end
     assign  addr_data = ex_ram_ctrl[0] ? out : 32'hzzzz;
-    assign  ram_din = ex_data2;
+    // assign  ram_din = ex_data2;
     reg     [15:0]      ma_ram_ctrl;
-    reg     [31:0]      ma_out;
     always @(posedge clk) begin
         ma_ram_ctrl <= ex_ram_ctrl;
         ma_out <= out;
@@ -117,7 +145,6 @@ module cpu_core (
 
     /*写回*/
     /*译码+执行+访存 控制 写回*/
-    reg     [4:0]       ex_rd, ma_rd;
     reg                 ex_wr_en, ma_wr_en;
     always @(posedge clk) begin
         ex_rd <= rd;
