@@ -23,7 +23,10 @@ module cpu_core (
     wire    [4:0]       ram_ctrl;
     wire                jmp_flag;
     wire    [4:0]       jmp_rs;
-    wire    [31:0]      jmp_data;
+    wire    [31:0]      data_jmp_rs;
+    reg     [31:0]      jmp_data;
+    wire                reg_flag;
+    wire                jmp_wait;
     reg                 branch_flag;
     reg                 flush_flag;
 
@@ -39,18 +42,30 @@ module cpu_core (
         .running        (running),
         .flush_flag     (flush_flag),
         .jmp_flag       (jmp_flag),
+        .reg_flag       (reg_flag),
         .jmp_rs         (jmp_rs),
         .jmp_data       (jmp_data),
+        .jmp_wait       (jmp_wait),
         .pc_now         (pc_now),
         .pc             (pc),
         .instruction    (instruction)
     );
+    assign  jmp_wait = (reg_flag && jmp_rs==rd) ? 1'b1 : 1'b0;
+    always @(*) begin
+        if(jmp_rs==ex_rd)
+            jmp_data = out;
+        else if(jmp_rs==ma_rd)
+            jmp_data = ma_out;
+        else
+            jmp_data = data_jmp_rs;
+    end
 
 
     /*译码*/
     cpu_idu cpu_idu_inst(
         .clk            (clk),
         .flush_flag     (flush_flag),
+        .jmp_wait       (jmp_wait),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs1            (rs1),
@@ -147,9 +162,17 @@ module cpu_core (
     /*译码+执行+访存 控制 写回*/
     reg                 ex_wr_en, ma_wr_en;
     always @(posedge clk) begin
-        ex_rd <= rd;
+        if(flush_flag) begin
+            ex_rd <= 5'd0;
+            ex_wr_en <= 5'd0;
+        end
+        else begin
+            ex_rd <= rd;
+            ex_wr_en <= wr_en;
+        end
+    end
+    always @(posedge clk) begin
         ma_rd <= ex_rd;
-        ex_wr_en <= wr_en;
         ma_wr_en <= ex_wr_en;
     end
     assign  data_rd = ma_ram_ctrl[0] ? ram_dout : ma_out;
@@ -164,7 +187,7 @@ module cpu_core (
         .data_rd        (data_rd),
         .data1          (id_data1),
         .data2          (id_data2),
-        .jmp_data       (jmp_data)
+        .data_jmp_rs    (data_jmp_rs)
     );
 
 
