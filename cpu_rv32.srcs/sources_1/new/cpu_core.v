@@ -93,7 +93,7 @@ module cpu_core (
         if(rs1==ex_rd)
             data1 = out;
         else if(rs1==ma_rd)
-            data1 = ma_out;
+            data1 = data_rd;
         else
             data1 = id_data1;
     end
@@ -101,7 +101,7 @@ module cpu_core (
         if(rs2==ex_rd)
             data2 = out;
         else if(rs2==ma_rd)
-            data2 = ma_out;
+            data2 = data_rd;
         else
             data2 = id_data2;
     end
@@ -145,7 +145,7 @@ module cpu_core (
     end
     always @(*) begin
         if(ex_rs2==ma_rd)
-            ram_din = ma_out;
+            ram_din = data_rd;
         else
             ram_din = ex_data2;
     end
