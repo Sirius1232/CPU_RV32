@@ -17,21 +17,26 @@ module cpu_core (
     wire    [31:0]      id_data1, id_data2, data_rd;
     wire    [31:0]      in1, in2, out;
     wire    [4:0]       alu_ctrl;
-    wire    [1:0]       jump_flag;  // 待修改
+    // wire    [1:0]       jump_flag;  // 待修改
     wire                wr_en;
     wire    [2:0]       jmp_en;
     wire    [4:0]       ram_ctrl;
+    wire                jmp_flag;
     wire    [4:0]       jmp_rs;
     wire    [31:0]      jmp_data;
+    reg                 branch_flag;
+    reg                 flush_flag;
 
 
     /*取指*/
     /*译码+执行 控制 取指*/
-    assign  jump_flag = {jmp_en[2], jmp_en[1]|jmp_en[0]&out[0]};
+    // assign  jump_flag = {jmp_en[2], jmp_en[1]|jmp_en[0]&out[0]};
     cpu_ifu cpu_ifu_inst(
         .clk            (clk),
         .rst_n          (rst_n),
         .running        (running),
+        .flush_flag     (flush_flag),
+        .jmp_flag       (jmp_flag),
         .jmp_rs         (jmp_rs),
         .jmp_data       (jmp_data),
         .pc_now         (pc_now),
@@ -43,6 +48,7 @@ module cpu_core (
     /*译码*/
     cpu_idu cpu_idu_inst(
         .clk            (clk),
+        .flush_flag     (flush_flag),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs1            (rs1),
@@ -56,8 +62,10 @@ module cpu_core (
         .imm1           (imm1)
     );
     reg     [15:0]      pc_now_ex;
+    reg                 id_jmp_flag;
     always @(posedge clk) begin
         pc_now_ex <= pc_now;
+        id_jmp_flag <= jmp_flag;
     end
 
 
@@ -67,6 +75,7 @@ module cpu_core (
     assign  in2 = imm_en[0] ? imm0 : id_data2;
     cpu_exu cpu_exu_inst(
         .clk            (clk),
+        .flush_flag     (flush_flag),
         .alu_ctrl       (alu_ctrl),
         .in1            (in1),
         .in2            (in2),
@@ -76,6 +85,21 @@ module cpu_core (
     always @(posedge clk) begin
         ex_data2 <= id_data2;
         ex_ram_ctrl <= ram_ctrl;
+    end
+
+    /*流水线冲刷*/
+    reg             ex_jmp_flag;
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            ex_jmp_flag <= 1'b0;
+            branch_flag <= 1'b0;
+            flush_flag  <= 1'b0;
+        end
+        else begin
+            ex_jmp_flag <= id_jmp_flag;
+            branch_flag <= jmp_en[0];
+            flush_flag  <= branch_flag ? ex_jmp_flag ^ out[0] : 1'b0;
+        end
     end
 
 

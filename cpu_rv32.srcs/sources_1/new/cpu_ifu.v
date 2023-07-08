@@ -15,6 +15,8 @@ module cpu_ifu (
         input               clk,
         input               rst_n,
         input               running,  // 程序运行标志
+        input               flush_flag,
+        output  reg         jmp_flag,  // 预测跳转标志
         output      [4:0]   jmp_rs,
         input       [31:0]  jmp_data,
         output  reg [15:0]  pc_now,  // 程序计数器
@@ -25,9 +27,11 @@ module cpu_ifu (
     reg                 running_d;
     wire                pc_move;
 
-    reg                 jmp_flag;
     reg                 reg_flag;
     reg     [31:0]      jmp_imm;
+
+    reg     [15:0]      pc_branch;
+    reg     [15:0]      flush_pc[0:2];
 
     /*指令片段拆分*/
     wire    [6:0]       opcode;
@@ -53,16 +57,25 @@ module cpu_ifu (
     assign  pc_move = running_d & running;
 
     always @(*) begin
-        if(~pc_move)  // 为了修复第一条指令无法取出的问题
+        if(~pc_move) begin  // 为了修复第一条指令无法取出的问题
             pc = 16'd0;
+            pc_branch = 16'd0;
+        end
+        else if(flush_flag) begin
+            pc = flush_pc[2];
+            pc_branch = 16'd0;
+        end
         else if(jmp_flag) begin
             if(reg_flag)
                 pc = jmp_data + jmp_imm;
             else
                 pc = pc_now + jmp_imm;
+            pc_branch = pc_now + 16'd4;
         end
-        else
+        else begin
             pc = pc_now + 16'd4;
+            pc_branch = pc_now + 16'd4;
+        end
     end
 
     always @(posedge clk or negedge rst_n) begin
@@ -89,7 +102,7 @@ module cpu_ifu (
                 jmp_imm = {{20{imm_i[11]}}, imm_i};
             end
             `BRANCH     : begin
-                jmp_flag = imm_b[11];  // 最高位为1，即向前跳转默认预测为跳
+                jmp_flag = 1'b1;  //默认预测为跳
                 reg_flag = 1'b0;
                 jmp_imm = {{19{imm_b[11]}}, imm_b, 1'b0};  // 末尾补0相当于左移一位
             end
@@ -99,6 +112,19 @@ module cpu_ifu (
                 jmp_imm = 32'd0;
             end
         endcase
+    end
+
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            flush_pc[0] <= 16'd0;
+            flush_pc[1] <= 16'd0;
+            flush_pc[2] <= 16'd0;
+        end
+        else begin
+            flush_pc[0] <= pc_branch;
+            flush_pc[1] <= flush_pc[0];
+            flush_pc[2] <= flush_pc[1];
+        end
     end
 
 
