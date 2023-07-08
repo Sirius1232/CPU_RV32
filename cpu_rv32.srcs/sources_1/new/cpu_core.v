@@ -165,15 +165,15 @@ module cpu_core (
         if(flush_flag) begin
             ex_rd <= 5'd0;
             ex_wr_en <= 5'd0;
+            ma_rd <= 5'd0;
+            ma_wr_en <= 5'd0;
         end
         else begin
             ex_rd <= rd;
             ex_wr_en <= wr_en;
+            ma_rd <= ex_rd;
+            ma_wr_en <= ex_wr_en;
         end
-    end
-    always @(posedge clk) begin
-        ma_rd <= ex_rd;
-        ma_wr_en <= ex_wr_en;
     end
     assign  data_rd = ma_ram_ctrl[0] ? ram_dout : ma_out;
     cpu_reg cpu_reg_inst(
