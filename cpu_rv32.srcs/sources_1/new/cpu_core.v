@@ -1,3 +1,5 @@
+`include "command.vh"
+
 module cpu_core (
         input               clk,
         input               rst_n,
@@ -23,9 +25,12 @@ module cpu_core (
     wire    [31:0]      jmp_data_rs;
     reg     [31:0]      jmp_data;
     wire                jmp_reg_en;
-    reg                 wait_flag;
     reg                 branch_flag;
     wire                flush_flag;
+
+    reg     [3:1]       load_flg_seq;
+    reg                 wait_jmp;
+    wire                wait_exe;
 
     wire                stp1_wr_en;
     wire    [4:0]       stp1_ram_ctrl;
@@ -43,8 +48,17 @@ module cpu_core (
     assign  flush_flag = branch_flag ? stp2_jmp_pred ^ stp2_exu_out[0] : 1'b0;
 
     /*数据在流水线间的传递*/
+    /*idu的输出*/
     always @(posedge clk or negedge rst_n) begin
-        if(!rst_n) begin
+        if(!rst_n || flush_flag) begin
+            stp1_pc_now <= 16'd0;
+            stp1_jmp_pred <= 1'b0;
+        end
+        else if(wait_exe) begin
+            stp1_pc_now <= stp1_pc_now;
+            stp1_jmp_pred <= stp1_jmp_pred;
+        end
+        else if(wait_jmp) begin
             stp1_pc_now <= 16'd0;
             stp1_jmp_pred <= 1'b0;
         end
@@ -53,8 +67,18 @@ module cpu_core (
             stp1_jmp_pred <= jmp_pred;
         end
     end
+    /*exu的输出*/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
+            stp2_rs2 <= 5'd0;
+            stp2_data2 <= 32'd0;
+            stp2_ram_ctrl <= 5'b00000;
+            stp2_jmp_pred <= 1'b0;
+            branch_flag <= 1'b0;
+            stp2_rd <= 5'd0;
+            stp2_wr_en <= 1'b0;
+        end
+        else if(wait_exe) begin
             stp2_rs2 <= 5'd0;
             stp2_data2 <= 32'd0;
             stp2_ram_ctrl <= 5'b00000;
@@ -73,6 +97,7 @@ module cpu_core (
             stp2_wr_en <= stp1_wr_en;
         end
     end
+    /*mau的输出*/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             stp3_ram_ctrl <= 5'b00000;
@@ -88,6 +113,31 @@ module cpu_core (
         end
     end
 
+    /*数据冲突控制*/
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n || flush_flag) begin
+            load_flg_seq <= 3'b000;
+        end
+        else if(wait_exe) begin
+            load_flg_seq[1] <= load_flg_seq[1];
+            load_flg_seq[2] <= 1'b0;
+            load_flg_seq[3] <= load_flg_seq[2];
+        end
+        else if(wait_jmp) begin
+            load_flg_seq[1] <= 1'b0;
+            load_flg_seq[2] <= load_flg_seq[1];
+            load_flg_seq[3] <= load_flg_seq[2];
+        end
+        else begin
+            if(instruction[6:0]==`LOAD)
+                load_flg_seq[1] <= 1'b1;
+            else
+                load_flg_seq[1] <= 1'b0;
+            load_flg_seq[2] <= load_flg_seq[1];
+            load_flg_seq[3] <= load_flg_seq[2];
+        end
+    end
+
 
     /*取指*/
     /*译码+执行 控制 取指*/
@@ -96,22 +146,25 @@ module cpu_core (
         .rst_n          (rst_n),
         .running        (running),
         .flush_flag     (flush_flag),
+        .wait_exe       (wait_exe),
         .jmp_pred       (jmp_pred),
         .jmp_reg_en     (jmp_reg_en),
         .jmp_rs         (jmp_rs),
         .jmp_data       (jmp_data),
-        .wait_flag       (wait_flag),
+        .wait_jmp       (wait_jmp),
         .pc_now         (pc_now),
         .pc             (pc),
         .instruction    (instruction)
     );
     always @(*) begin
         if(!jmp_reg_en || jmp_rs==5'd0)  // 非寄存器链接或链接到x0
-            wait_flag = 1'b0;
+            wait_jmp = 1'b0;
         else if(jmp_rs==stp1_rd)
-            wait_flag = 1'b1;
+            wait_jmp = 1'b1;
+        else if(jmp_rs==stp2_rd && load_flg_seq[2])
+            wait_jmp = 1'b1;
         else
-            wait_flag = 1'b0;
+            wait_jmp = 1'b0;
     end
     always @(*) begin
         if(jmp_rs==5'd0)
@@ -129,7 +182,8 @@ module cpu_core (
     cpu_idu cpu_idu_inst(
         .clk            (clk),
         .flush_flag     (flush_flag),
-        .wait_flag       (wait_flag),
+        .wait_exe       (wait_exe),
+        .wait_jmp       (wait_jmp),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs1            (stp1_rs1),
@@ -146,13 +200,35 @@ module cpu_core (
 
     /*stp1-执行-stp2*/
     /*取指+译码 控制 执行*/
+    reg                 wait_exe_1, wait_exe_2;
+    assign  wait_exe = wait_exe_1 | wait_exe_2;
+    always @(*) begin
+        if(stp1_rs1==5'd0 || imm_en[1] || jmp_ctrl[1])  // 与寄存器值无关
+            wait_exe_1 = 1'b0;
+        else if(stp1_rs1==stp2_rd && load_flg_seq[2])  // 执行
+            wait_exe_1 = 1'b1;
+        else if(stp1_rs1==stp3_rd)  // 访存
+            wait_exe_1 = 1'b0;
+        else
+            wait_exe_1 = 1'b0;
+    end
+    always @(*) begin
+        if(stp1_rs2==5'd0 || imm_en[0] || jmp_ctrl[1])  // 与寄存器值无关
+            wait_exe_2 = 1'b0;
+        else if(stp1_rs2==stp2_rd && load_flg_seq[2])  // 执行
+            wait_exe_2 = 1'b1;
+        else if(stp1_rs2==stp3_rd)  // 访存
+            wait_exe_2 = 1'b0;
+        else
+            wait_exe_2 = 1'b0;
+    end
     reg     [31:0]      data1, data2;
     always @(*) begin
         if(stp1_rs1==5'd0 || imm_en[1] || jmp_ctrl[1])  // 与寄存器值无关
             data1 = 32'd0;
-        else if(stp1_rs1==stp2_rd)
+        else if(stp1_rs1==stp2_rd)  // 执行的输出
             data1 = stp2_exu_out;
-        else if(stp1_rs1==stp3_rd)
+        else if(stp1_rs1==stp3_rd)  // 访存的输出
             data1 = stp3_data_rd;
         else
             data1 = stp1_data1;
@@ -160,9 +236,9 @@ module cpu_core (
     always @(*) begin
         if(stp1_rs2==5'd0 || imm_en[0])  // 与寄存器值无关
             data2 = 32'd0;
-        else if(stp1_rs2==stp2_rd)
+        else if(stp1_rs2==stp2_rd)  // 执行的输出
             data2 = stp2_exu_out;
-        else if(stp1_rs2==stp3_rd)
+        else if(stp1_rs2==stp3_rd)  // 访存的输出
             data2 = stp3_data_rd;
         else
             data2 = stp1_data2;
@@ -172,6 +248,7 @@ module cpu_core (
     cpu_exu cpu_exu_inst(
         .clk            (clk),
         .flush_flag     (flush_flag),
+        .wait_exe       (wait_exe),
         .alu_ctrl       (alu_ctrl),
         .in1            (exu_in1),
         .in2            (exu_in2),

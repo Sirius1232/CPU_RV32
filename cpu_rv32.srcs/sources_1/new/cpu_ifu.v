@@ -16,11 +16,12 @@ module cpu_ifu (
         input               rst_n,
         input               running,  // 程序运行标志
         input               flush_flag,
+        input               wait_exe,
         output  reg         jmp_pred,  // 跳转预测标志
         output  reg         jmp_reg_en,
         output      [4:0]   jmp_rs,
         input       [31:0]  jmp_data,
-        input               wait_flag,
+        input               wait_jmp,
         output  reg [15:0]  pc_now,  // 程序计数器
         output  reg [15:0]  pc,
         input       [31:0]  instruction
@@ -66,7 +67,11 @@ module cpu_ifu (
             pc = flush_pc[1];
             pc_branch = 16'd0;
         end
-        else if(wait_flag) begin
+        else if(wait_exe) begin
+            pc = pc_now;
+            pc_branch = pc_now;
+        end
+        else if(wait_jmp) begin
             pc = pc_now;
             pc_branch = pc_now;
         end
