@@ -77,7 +77,7 @@ module cpu_rv32 (
         .running        (running),
         .pc             (pc),
         .instruction    (instruction),
-        .ex_ram_ctrl    (ram_ctrl),
+        .stp2_ram_ctrl  (ram_ctrl),
         .addr_data      (addr_d),
         .ram_dout       (ram_dout),
         .ram_din        (ram_din)

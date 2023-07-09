@@ -17,7 +17,7 @@ module cpu_ifu (
         input               running,  // 程序运行标志
         input               flush_flag,
         output  reg         jmp_flag,  // 预测跳转标志
-        output  reg         reg_flag,
+        output  reg         jmp_reg_en,
         output      [4:0]   jmp_rs,
         input       [31:0]  jmp_data,
         input               jmp_wait,
@@ -29,7 +29,6 @@ module cpu_ifu (
     reg                 running_d;
     wire                pc_move;
 
-    // reg                 reg_flag;
     reg     [31:0]      jmp_imm;
 
     reg     [15:0]      pc_branch;
@@ -64,7 +63,7 @@ module cpu_ifu (
             pc_branch = 16'd0;
         end
         else if(flush_flag) begin
-            pc = flush_pc[2];
+            pc = flush_pc[1];
             pc_branch = 16'd0;
         end
         else if(jmp_wait) begin
@@ -72,7 +71,7 @@ module cpu_ifu (
             pc_branch = pc_now;
         end
         else if(jmp_flag) begin
-            if(reg_flag)
+            if(jmp_reg_en)
                 pc = jmp_data + jmp_imm;
             else
                 pc = pc_now + jmp_imm;
@@ -99,22 +98,22 @@ module cpu_ifu (
         case (opcode)
             `JAL        : begin
                 jmp_flag = 1'b1;
-                reg_flag = 1'b0;
+                jmp_reg_en = 1'b0;
                 jmp_imm = {{11{imm_j[19]}}, imm_j, 1'b0};  // 末尾补0相当于左移一位
             end
             `JALR       : begin
                 jmp_flag = 1'b1;
-                reg_flag = 1'b1;
+                jmp_reg_en = 1'b1;
                 jmp_imm = {{20{imm_i[11]}}, imm_i};
             end
             `BRANCH     : begin
                 jmp_flag = 1'b1;  //默认预测为跳
-                reg_flag = 1'b0;
+                jmp_reg_en = 1'b0;
                 jmp_imm = {{19{imm_b[11]}}, imm_b, 1'b0};  // 末尾补0相当于左移一位
             end
             default     : begin
                 jmp_flag = 1'b0;
-                reg_flag = 1'b0;
+                jmp_reg_en = 1'b0;
                 jmp_imm = 32'd0;
             end
         endcase

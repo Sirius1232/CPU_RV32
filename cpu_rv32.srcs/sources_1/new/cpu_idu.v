@@ -24,7 +24,7 @@ module cpu_idu (
         /*功能使能、控制信号*/
         output  reg [4:0]   alu_ctrl,  // 运算单元控制
         output  reg         wr_en,  // 通用寄存器写使能
-        output  reg [2:0]   jmp_en,  // 指令跳转功能使能（[2]:寄存器链接，[1]:无条件跳转，[0]:条件分支）
+        output  reg [2:0]   jmp_ctrl,  // 指令跳转功能控制（[2]:寄存器链接，[1]:无条件跳转，[0]:条件分支）
         output  reg [4:0]   ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
         /*立即数*/
         output  reg [1:0]   imm_en,
@@ -129,7 +129,7 @@ module cpu_idu (
     always @(posedge clk) begin
         if(nop) begin
             wr_en <= 1'b0;
-            jmp_en <= 3'b000;
+            jmp_ctrl <= 3'b000;
             ram_ctrl <= 5'b00000;
             imm_en <= 2'b00;
             imm1 <= 32'd0;
@@ -139,7 +139,7 @@ module cpu_idu (
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b00;
                     imm1 <= 32'd0;
@@ -147,7 +147,7 @@ module cpu_idu (
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b01;
                     imm1 <= 32'd0;
@@ -158,7 +158,7 @@ module cpu_idu (
                 end
                 `LUI    : begin
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b11;
                     imm1 <= imm_u;
@@ -166,7 +166,7 @@ module cpu_idu (
                 end
                 `JAL    : begin
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b010;
+                    jmp_ctrl <= 3'b010;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b01;
                     imm1 <= {{11{imm_j[19]}}, imm_j, 1'b0};  // 末尾补0相当于左移一位
@@ -174,7 +174,7 @@ module cpu_idu (
                 end
                 `JALR   : begin
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b110;
+                    jmp_ctrl <= 3'b110;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b01;
                     imm1 <= {{20{imm_i[11]}}, imm_i};
@@ -182,7 +182,7 @@ module cpu_idu (
                 end
                 `BRANCH : begin
                     wr_en <= 1'b0;
-                    jmp_en <= 3'b001;
+                    jmp_ctrl <= 3'b001;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b00;
                     imm1 <= {{19{imm_b[11]}}, imm_b, 1'b0};  // 末尾补0相当于左移一位
@@ -190,7 +190,7 @@ module cpu_idu (
                 end
                 `LOAD   : begin
                     wr_en <= 1'b1;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= {funct3, 2'b01};
                     imm_en <= 2'b01;
                     imm1 <= 32'd0;
@@ -198,7 +198,7 @@ module cpu_idu (
                 end
                 `STORE  : begin
                     wr_en <= 1'b0;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= {funct3, 2'b11};
                     imm_en <= 2'b01;
                     imm1 <= 32'd0;
@@ -206,7 +206,7 @@ module cpu_idu (
                 end
                 default : begin
                     wr_en <= 1'b0;
-                    jmp_en <= 3'b000;
+                    jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
                     imm_en <= 2'b00;
                     imm1 <= 32'd0;
