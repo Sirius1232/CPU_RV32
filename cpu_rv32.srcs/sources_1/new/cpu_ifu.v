@@ -16,11 +16,11 @@ module cpu_ifu (
         input               rst_n,
         input               running,  // 程序运行标志
         input               flush_flag,
-        output  reg         jmp_flag,  // 预测跳转标志
+        output  reg         jmp_pred,  // 跳转预测标志
         output  reg         jmp_reg_en,
         output      [4:0]   jmp_rs,
         input       [31:0]  jmp_data,
-        input               jmp_wait,
+        input               wait_flag,
         output  reg [15:0]  pc_now,  // 程序计数器
         output  reg [15:0]  pc,
         input       [31:0]  instruction
@@ -32,7 +32,7 @@ module cpu_ifu (
     reg     [31:0]      jmp_imm;
 
     reg     [15:0]      pc_branch;
-    reg     [15:0]      flush_pc[0:2];
+    reg     [15:0]      flush_pc[0:1];
 
     /*指令片段拆分*/
     wire    [6:0]       opcode;
@@ -66,11 +66,11 @@ module cpu_ifu (
             pc = flush_pc[1];
             pc_branch = 16'd0;
         end
-        else if(jmp_wait) begin
+        else if(wait_flag) begin
             pc = pc_now;
             pc_branch = pc_now;
         end
-        else if(jmp_flag) begin
+        else if(jmp_pred) begin
             if(jmp_reg_en)
                 pc = jmp_data + jmp_imm;
             else
@@ -97,22 +97,22 @@ module cpu_ifu (
     always @(*) begin
         case (opcode)
             `JAL        : begin
-                jmp_flag = 1'b1;
+                jmp_pred = 1'b1;
                 jmp_reg_en = 1'b0;
                 jmp_imm = {{11{imm_j[19]}}, imm_j, 1'b0};  // 末尾补0相当于左移一位
             end
             `JALR       : begin
-                jmp_flag = 1'b1;
+                jmp_pred = 1'b1;
                 jmp_reg_en = 1'b1;
                 jmp_imm = {{20{imm_i[11]}}, imm_i};
             end
             `BRANCH     : begin
-                jmp_flag = 1'b1;  //默认预测为跳
+                jmp_pred = 1'b1;  //默认预测为跳
                 jmp_reg_en = 1'b0;
                 jmp_imm = {{19{imm_b[11]}}, imm_b, 1'b0};  // 末尾补0相当于左移一位
             end
             default     : begin
-                jmp_flag = 1'b0;
+                jmp_pred = 1'b0;
                 jmp_reg_en = 1'b0;
                 jmp_imm = 32'd0;
             end
@@ -123,12 +123,10 @@ module cpu_ifu (
         if(!rst_n) begin
             flush_pc[0] <= 16'd0;
             flush_pc[1] <= 16'd0;
-            flush_pc[2] <= 16'd0;
         end
         else begin
             flush_pc[0] <= pc_branch;
             flush_pc[1] <= flush_pc[0];
-            flush_pc[2] <= flush_pc[1];
         end
     end
 

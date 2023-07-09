@@ -1,3 +1,5 @@
+`define     NOP         32'h00000013// nop指令
+
 /*ALU*/
 `define     ALU_AND     5'b00000    // 逻辑与
 `define     ALU_OR      5'b00001    // 逻辑或
