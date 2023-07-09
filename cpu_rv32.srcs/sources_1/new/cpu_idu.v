@@ -16,7 +16,6 @@ module cpu_idu (
         // input               rst_n,
         input               flush_flag,
         input               wait_exe,
-        input               wait_jmp,
         input       [31:0]  instruction,
         /*寄存器地址*/
         output  reg [4:0]   rs1,
@@ -68,11 +67,6 @@ module cpu_idu (
             rs2 <= rs2;
             rd  <= rd;
         end
-        else if(wait_jmp) begin
-            rs1 <= 5'd0;
-            rs2 <= 5'd0;
-            rd  <= 5'd0;
-        end
         else begin
             rs1 <= instruction[19:15];
             rs2 <= instruction[24:20];
@@ -87,9 +81,6 @@ module cpu_idu (
         end
         else if(wait_exe) begin
             alu_ctrl <= alu_ctrl;
-        end
-        else if(wait_jmp) begin
-            alu_ctrl <= `ALU_ADD;
         end
         else begin
             case (opcode)
@@ -157,14 +148,6 @@ module cpu_idu (
             imm_en <= imm_en;
             imm1 <= imm1;
             imm0 <= imm0;
-        end
-        else if(wait_jmp) begin
-            wr_en <= 1'b0;
-            jmp_ctrl <= 3'b000;
-            ram_ctrl <= 5'b00000;
-            imm_en <= 2'b00;
-            imm1 <= 32'd0;
-            imm0 <= 32'd0;
         end
         else begin
             case (opcode)

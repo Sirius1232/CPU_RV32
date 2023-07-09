@@ -5,13 +5,14 @@ module cpu_core (
         input               rst_n,
         input               running,
         output      [15:0]  pc,
-        input       [31:0]  instruction,
+        input       [31:0]  pc_instr,
         output  reg [4:0]   stp2_ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
         output      [31:0]  ram_addr,
         input       [31:0]  ram_dout,
         output  reg [31:0]  ram_din
     );
 
+    reg     [31:0]      instruction;
     wire    [15:0]      pc_now;
     wire    [4:0]       stp1_rs1, stp1_rs2, stp1_rd;
     wire    [31:0]      stp1_data1, stp1_data2, stp3_data_rd;
@@ -43,9 +44,6 @@ module cpu_core (
     reg     [15:0]      stp3_ram_ctrl;
     reg     [4:0]       stp2_rd, stp3_rd;
     reg     [31:0]      stp3_out;
-
-    /*流水线冲刷*/
-    assign  flush_flag = branch_flag ? stp2_jmp_pred ^ stp2_exu_out[0] : 1'b0;
 
     /*数据在流水线间的传递*/
     /*idu的输出*/
@@ -113,7 +111,7 @@ module cpu_core (
         end
     end
 
-    /*数据冲突控制*/
+    /*load指令记录*/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
             load_flg_seq <= 3'b000;
@@ -138,6 +136,9 @@ module cpu_core (
         end
     end
 
+    /*流水线冲刷*/
+    assign  flush_flag = branch_flag ? stp2_jmp_pred ^ stp2_exu_out[0] : 1'b0;
+
 
     /*取指*/
     /*译码+执行 控制 取指*/
@@ -156,6 +157,17 @@ module cpu_core (
         .pc             (pc),
         .instruction    (instruction)
     );
+    always @(*) begin
+        if(flush_flag)
+            instruction = `NOP;
+        else if(wait_exe)
+            instruction = pc_instr;
+        else if(wait_jmp)
+            instruction = `NOP;
+        else
+            instruction = pc_instr;
+    end
+    /*取指模块的数据冲突问题*/
     always @(*) begin
         if(!jmp_reg_en || jmp_rs==5'd0)  // 非寄存器链接或链接到x0
             wait_jmp = 1'b0;
@@ -183,8 +195,7 @@ module cpu_core (
         .clk            (clk),
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
-        .wait_jmp       (wait_jmp),
-        .instruction    (instruction),
+        .instruction    (pc_instr),
         .alu_ctrl       (alu_ctrl),
         .rs1            (stp1_rs1),
         .rs2            (stp1_rs2),
@@ -200,6 +211,7 @@ module cpu_core (
 
     /*stp1-执行-stp2*/
     /*取指+译码 控制 执行*/
+    /*执行模块的数据冲突问题*/
     reg                 wait_exe_1, wait_exe_2;
     assign  wait_exe = wait_exe_1 | wait_exe_2;
     always @(*) begin
