@@ -150,11 +150,11 @@ module cpu_core (
         .running        (running),
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
+        .wait_jmp       (wait_jmp),
         .jmp_pred       (jmp_pred),
         .jmp_reg_en     (jmp_reg_en),
         .jmp_rs         (jmp_rs),
         .jmp_data       (jmp_data),
-        .wait_jmp       (wait_jmp),
         .pc_now         (pc_now),
         .pc             (pc),
         .instruction    (pc_instr)
@@ -195,7 +195,7 @@ module cpu_core (
     /*stp0-译码-stp1*/
     cpu_idu cpu_idu_inst(
         .clk            (clk),
-        .flush_flag     (flush_flag),
+        .rst_n          (rst_n),
         .wait_exe       (wait_exe),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),

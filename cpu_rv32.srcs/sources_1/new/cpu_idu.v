@@ -13,8 +13,7 @@
 
 module cpu_idu (
         input               clk,
-        // input               rst_n,
-        input               flush_flag,
+        input               rst_n,
         input               wait_exe,
         input       [31:0]  instruction,
         /*寄存器地址*/
@@ -56,8 +55,8 @@ module cpu_idu (
     assign  imm_u = instruction[31:12];
     assign  imm_j = {instruction[31],instruction[19:12],instruction[20],instruction[30:21]};
 
-    always @(posedge clk) begin
-        if(flush_flag) begin
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
             rs1 <= 5'd0;
             rs2 <= 5'd0;
             rd  <= 5'd0;
@@ -75,8 +74,8 @@ module cpu_idu (
     end
 
     /*alu_ctrl*/
-    always @(posedge clk) begin
-        if(flush_flag) begin
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
             alu_ctrl <= `ALU_ADD;
         end
         else if(wait_exe) begin
@@ -132,8 +131,8 @@ module cpu_idu (
     end
 
     /**/
-    always @(posedge clk) begin
-        if(flush_flag) begin
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
             wr_en <= 1'b0;
             jmp_ctrl <= 3'b000;
             ram_ctrl <= 5'b00000;
