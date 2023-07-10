@@ -6,7 +6,7 @@ module cpu_core (
         input               running,
         output      [15:0]  pc,
         input       [31:0]  pc_instr,
-        output  reg [4:0]   stp2_ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
+        output      [4:0]   ram_ctrl,  // [4:2]:数据长度控制，即funct3；[1]:写；[0]:使用数据存储器
         output      [31:0]  ram_addr,
         input       [31:0]  ram_dout,
         output  reg [31:0]  ram_din
@@ -41,7 +41,8 @@ module cpu_core (
     reg                 stp2_jmp_pred;
     reg     [4:0]       stp2_rs2;
     reg                 stp2_wr_en, stp3_wr_en;
-    reg     [15:0]      stp3_ram_ctrl;
+    reg     [4:0]       stp2_ram_ctrl;
+    reg     [4:0]       stp3_ram_ctrl;
     reg     [4:0]       stp2_rd, stp3_rd;
     reg     [31:0]      stp3_out;
 
@@ -66,6 +67,7 @@ module cpu_core (
         end
     end
     /*exu的输出*/
+    assign  ram_ctrl = stp2_ram_ctrl;
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
             stp2_rs2 <= 5'd0;
@@ -155,7 +157,7 @@ module cpu_core (
         .wait_jmp       (wait_jmp),
         .pc_now         (pc_now),
         .pc             (pc),
-        .instruction    (instruction)
+        .instruction    (pc_instr)
     );
     always @(*) begin
         if(flush_flag)
@@ -184,7 +186,7 @@ module cpu_core (
         else if(jmp_rs==stp2_rd)
             jmp_data = stp2_exu_out;
         else if(jmp_rs==stp3_rd)
-            jmp_data = stp3_out;
+            jmp_data = stp3_data_rd;
         else
             jmp_data = jmp_data_rs;
     end
@@ -195,7 +197,7 @@ module cpu_core (
         .clk            (clk),
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
-        .instruction    (pc_instr),
+        .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs1            (stp1_rs1),
         .rs2            (stp1_rs2),
