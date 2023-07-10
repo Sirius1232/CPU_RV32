@@ -19,9 +19,9 @@ module cpu_ifu (
         input               wait_exe,
         input               wait_jmp,
         output  reg         jmp_pred,  // 跳转预测标志
-        output  reg         jmp_reg_en,
-        output      [4:0]   jmp_rs,
-        input       [31:0]  jmp_data,
+        output  reg         jmp_reg_en,  // 使用寄存器跳转标志
+        output      [4:0]   jmp_rs,  // 跳转指令使用的寄存器地址
+        input       [31:0]  jmp_data,  // 跳转指令使用的寄存器数据
         output  reg [15:0]  pc_now,  // 记录当前指令对应的pc，用于jal和jalr指令
         output  reg [15:0]  pc,  // 取指用的pc
         input       [31:0]  instruction  // 与pc_now对应的指令，用于判断跳转
@@ -81,11 +81,11 @@ module cpu_ifu (
     end
     always @(*) begin
         if(jmp_reg_en)
-            pc_jmp = jmp_data + jmp_imm;
+            pc_jmp = (jmp_data + jmp_imm) & 32'hfffffffe;  // 最低位置零
         else
             pc_jmp = pc_now + jmp_imm;
     end
-    always @(*) begin
+    always @(*) begin  // 根据当前状态选择顺序执行和分支跳转
         if(flush_flag) begin
             pc = pc_next;
             pc_branch = pc_jmp;

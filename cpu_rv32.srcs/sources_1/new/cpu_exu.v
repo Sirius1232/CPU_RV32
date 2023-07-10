@@ -13,7 +13,7 @@
 
 module cpu_exu (
         input               clk,
-        // input               rst_n,
+        input               rst_n,
         input               flush_flag,
         input               wait_exe,
         input       [4:0]   alu_ctrl,
@@ -27,12 +27,9 @@ module cpu_exu (
     //*****************************************************
 
     always @(posedge clk) begin
-        if(flush_flag | wait_exe) begin
+        if(!rst_n || flush_flag | wait_exe) begin
             out <= 32'd0;
         end
-        // else if(wait_exe) begin
-        //     out <= out;
-        // end
         else begin
             case (alu_ctrl)
                 /*基础运算*/

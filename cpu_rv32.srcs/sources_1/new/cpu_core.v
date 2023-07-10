@@ -196,6 +196,7 @@ module cpu_core (
     cpu_idu cpu_idu_inst(
         .clk            (clk),
         .rst_n          (rst_n),
+        .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
@@ -261,6 +262,7 @@ module cpu_core (
     assign  exu_in2 = imm_en[0] ? imm0 : data2;
     cpu_exu cpu_exu_inst(
         .clk            (clk),
+        .rst_n          (rst_n),
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
         .alu_ctrl       (alu_ctrl),
