@@ -186,7 +186,7 @@ module cpu_core (
     always @(*) begin
         if(!jmp_reg_en || jmp_rs==5'd0)  // 非寄存器链接或链接到x0
             wait_jmp = 1'b0;
-        else if(jmp_rs==stp1_rd)
+        else if(jmp_rs==stp1_rd && stp1_wr_en)
             wait_jmp = 1'b1;
         else if(jmp_rs==stp2_rd && load_flg_seq[2])
             wait_jmp = 1'b1;

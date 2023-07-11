@@ -57,9 +57,13 @@ module pc_gen (
 
 
     always @(posedge clk or negedge rst_n) begin
-        if(!rst_n) begin
+        if(!rst_n || flush_flag) begin
             flush_pc[0] <= 16'd0;
             flush_pc[1] <= 16'd0;
+        end
+        else if(wait_exe | wait_jmp) begin
+            flush_pc[0] <= flush_pc[0];
+            flush_pc[1] <= flush_pc[1];
         end
         else begin
             flush_pc[0] <= pc_branch;
