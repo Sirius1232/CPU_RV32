@@ -23,7 +23,7 @@ module cpu_ifu (
         output      [4:0]   jmp_rs,  // 跳转指令使用的寄存器地址
         input       [31:0]  jmp_data,  // 跳转指令使用的寄存器数据
         output  reg [15:0]  pc_now,  // 记录当前指令对应的pc，用于jal和jalr指令
-        output  reg [15:0]  pc,  // 取指用的pc
+        output      [15:0]  pc,  // 取指用的pc
         input       [31:0]  instruction  // 与pc_now对应的指令，用于判断跳转
     );
 
@@ -31,11 +31,7 @@ module cpu_ifu (
     wire                pc_move;
 
     reg     [31:0]      jmp_imm;
-
-    reg     [15:0]      pc_next;
     reg     [15:0]      pc_jmp;
-    reg     [15:0]      pc_branch;
-    reg     [15:0]      flush_pc[0:1];
 
     /*指令片段拆分*/
     wire    [6:0]       opcode;
@@ -60,7 +56,7 @@ module cpu_ifu (
     end
     assign  pc_move = running_d & running;
 
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin  // 记录上一次取指的pc，用于计算下一个pc
         if(!rst_n)
             pc_now <= 16'd0;
         else if(pc_move)
@@ -69,40 +65,18 @@ module cpu_ifu (
             pc_now <= pc_now;
     end
 
-    always @(*) begin
-        if(~pc_move)  // 为了修复第一条指令无法取出的问题
-            pc_next = 16'd0;
-        else if(flush_flag)  // 从预测跳转到执行结果返回预测错误，需要两个时钟周期
-            pc_next = flush_pc[1];
-        else if(wait_exe | wait_jmp)
-            pc_next = pc_now;
-        else
-            pc_next = pc_now + 16'd4;
-    end
-    always @(*) begin
-        if(jmp_reg_en)
-            pc_jmp = (jmp_data + jmp_imm) & 32'hfffffffe;  // 最低位置零
-        else
-            pc_jmp = pc_now + jmp_imm;
-    end
-    always @(*) begin  // 根据当前状态选择顺序执行和分支跳转
-        if(flush_flag) begin
-            pc = pc_next;
-            pc_branch = pc_jmp;
-        end
-        else if(wait_exe | wait_jmp) begin
-            pc = pc_next;
-            pc_branch = pc_jmp;
-        end
-        else if(jmp_pred) begin
-            pc = pc_jmp;
-            pc_branch = pc_next;
-        end
-        else begin
-            pc = pc_next;
-            pc_branch = pc_jmp;
-        end
-    end
+    pc_gen pc_gen_inst(
+        .clk            (clk),
+        .rst_n          (rst_n),
+        .pc_move        (pc_move),
+        .flush_flag     (flush_flag),
+        .wait_exe       (wait_exe),
+        .wait_jmp       (wait_jmp),
+        .jmp_pred       (jmp_pred),
+        .pc_now         (pc_now),
+        .pc_jmp         (pc_jmp),
+        .pc             (pc)
+    );
 
 
     /*分支预测机制*/
@@ -131,15 +105,11 @@ module cpu_ifu (
         endcase
     end
 
-    always @(posedge clk or negedge rst_n) begin
-        if(!rst_n) begin
-            flush_pc[0] <= 16'd0;
-            flush_pc[1] <= 16'd0;
-        end
-        else begin
-            flush_pc[0] <= pc_branch;
-            flush_pc[1] <= flush_pc[0];
-        end
+    always @(*) begin
+        if(jmp_reg_en)
+            pc_jmp = (jmp_data + jmp_imm) & 32'hfffffffe;  // 最低位置零
+        else
+            pc_jmp = pc_now + jmp_imm;
     end
 
 
