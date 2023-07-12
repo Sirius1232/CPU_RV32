@@ -85,15 +85,39 @@ module cpu_idu (
         else begin
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
-                    case (funct3)
-                        `ADD    : alu_ctrl <= (funct7==`BASE) ? `ALU_ADD : `ALU_SUB;
-                        `SLL    : alu_ctrl <= `ALU_SLL;
-                        `SLT    : alu_ctrl <= `ALU_LT;
-                        `SLTU   : alu_ctrl <= `ALU_LTU;
-                        `XOR    : alu_ctrl <= `ALU_XOR;
-                        `SRL    : alu_ctrl <= (funct7==`BASE) ? `ALU_SRL : `ALU_SRA;
-                        `OR     : alu_ctrl <= `ALU_OR;
-                        `AND    : alu_ctrl <= `ALU_AND;
+                    case (funct7)
+                        `BASE   : begin
+                            case (funct3)
+                                `ADD    : alu_ctrl <= `ALU_ADD;
+                                `SLL    : alu_ctrl <= `ALU_SLL;
+                                `SLT    : alu_ctrl <= `ALU_LT;
+                                `SLTU   : alu_ctrl <= `ALU_LTU;
+                                `XOR    : alu_ctrl <= `ALU_XOR;
+                                `SRL    : alu_ctrl <= `ALU_SRL;
+                                `OR     : alu_ctrl <= `ALU_OR;
+                                `AND    : alu_ctrl <= `ALU_AND;
+                            endcase
+                        end
+                        `SPEC   : begin
+                            case (funct3)
+                                `ADD    : alu_ctrl <= `ALU_SUB;
+                                `SRL    : alu_ctrl <= `ALU_SRA;
+                                default : alu_ctrl <= `ALU_NOP;
+                            endcase
+                        end
+                        `MULDIV : begin
+                            case (funct3)
+                                `MULL   : alu_ctrl <= `ALU_MULL;
+                                `MULH   : alu_ctrl <= `ALU_MULH;
+                                `MULHSU : alu_ctrl <= `ALU_MULHSU;
+                                `MULHU  : alu_ctrl <= `ALU_MULHU;
+                                `DIV    : alu_ctrl <= `ALU_DIV;
+                                `DIVU   : alu_ctrl <= `ALU_DIVU;
+                                `REM    : alu_ctrl <= `ALU_REM;
+                                `REMU   : alu_ctrl <= `ALU_REMU;
+                            endcase
+                        end
+                        default : alu_ctrl <= `ALU_NOP;
                     endcase
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
@@ -126,7 +150,7 @@ module cpu_idu (
                 `STORE  : begin
                     alu_ctrl <= `ALU_ADD;
                 end
-                default : alu_ctrl <= 5'bzzzzz;
+                default : alu_ctrl <= `ALU_NOP;
             endcase
         end
     end

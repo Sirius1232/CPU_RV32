@@ -1,6 +1,8 @@
 `define     NOP         32'h00000013// nop指令
 
 /*ALU*/
+`define     ALU_NOP     5'bzzzzz
+
 `define     ALU_AND     5'b00000    // 逻辑与
 `define     ALU_OR      5'b00001    // 逻辑或
 `define     ALU_XOR     5'b00010    // 逻辑异或
@@ -16,6 +18,15 @@
 `define     ALU_GE      5'b01101    // 大于等于
 `define     ALU_LTU     5'b01110    // 无符号小于
 `define     ALU_GEU     5'b01111    // 无符号大于等于
+
+`define     ALU_MULL    5'b10001    // 为了后续解码方便，调换了顺序
+`define     ALU_MULH    5'b10000
+`define     ALU_MULHSU  5'b10010
+`define     ALU_MULHU   5'b10011
+`define     ALU_DIV     5'b10100
+`define     ALU_DIVU    5'b10101
+`define     ALU_REM     5'b10110
+`define     ALU_REMU    5'b10111
 
 
 /*opcode*/
@@ -40,6 +51,15 @@
 `define     SRA     3'b101      //算数右移运算
 `define     OR      3'b110      //或
 `define     AND     3'b111      //与
+/*opcode==`OP, funct7==`MULDIV*/
+`define     MULL    3'b000      //乘法，取低位
+`define     MULH    3'b001      //乘法，有符号*有符号，取高位
+`define     MULHSU  3'b010      //乘法，有符号*无符号，取高位
+`define     MULHU   3'b011      //乘法，无符号*无符号，取高位
+`define     DIV     3'b100      //有符号除法求商
+`define     DIVU    3'b101      //无符号除法求商
+`define     REM     3'b110      //有符号除法取余
+`define     REMU    3'b111      //无符号除法取余
 /*BRANCH*/
 `define     BEQ     3'b000      //相等时分支
 `define     BNE     3'b001      //不相等时分支
@@ -61,3 +81,4 @@
 /*funct7*/
 `define     BASE    7'b0000000
 `define     SPEC    7'b0100000
+`define     MULDIV  7'b0000001  //乘除法
