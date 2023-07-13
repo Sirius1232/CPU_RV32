@@ -82,7 +82,7 @@ module cpu_rv32 (
     assign  addr_i = {14{loading}}&lc[13:0] | {14{running}}&pc[13:0];
 
     wire    [4:0]       ram_ctrl;
-    wire    [31:0]      ram_dout, ram_din;
+    wire    [63:0]      ram_dout, ram_din;
     wire    [31:0]      addr_d;
 
     cpu_core cpu_core_inst(
