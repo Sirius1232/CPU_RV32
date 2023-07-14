@@ -4,6 +4,7 @@ module alu_fp (
         input       [4:0]   alu_ctrl,
         input       [31:0]  in1,
         input       [31:0]  in2,
+        input       [31:0]  in3,
         output  reg [31:0]  out
     );
 
@@ -11,6 +12,7 @@ module alu_fp (
     wire                feq, flt;
     reg     [3:0]       fclass;
     wire    [31:0]      fp32_int, fp32_uint;
+    wire    [31:0]      fmadd;
 
     //*****************************************************
     //**                    main code
@@ -37,6 +39,11 @@ module alu_fp (
             /*转为整数*/
             `ALU_F_W_S  : out <= fp32_int;
             `ALU_F_WU_S : out <= fp32_uint;
+            /*R4*/
+            `ALU_MADD   : out <= fmadd;
+            `ALU_MSUB   : out <= fmadd;
+            `ALU_NMADD  : out <= fmadd;
+            `ALU_NMSUB  : out <= fmadd;
             default     : out <= 32'd0;
         endcase
     end
@@ -128,5 +135,16 @@ module alu_fp (
             fclass = sign ? 4'd1 : 4'd6;
         end
     end
+
+    fp32_madd fp32_madd_inst (
+        .s_axis_a_tvalid        (1'b1),
+        .s_axis_a_tdata         ({alu_ctrl[1]^in1[31], in1[30:0]}),
+        .s_axis_b_tvalid        (1'b1),
+        .s_axis_b_tdata         (in2),
+        .s_axis_c_tvalid        (1'b1),
+        .s_axis_c_tdata         ({alu_ctrl[0]^in3[31], in3[30:0]}),
+        .m_axis_result_tvalid   (),
+        .m_axis_result_tdata    (fmadd)
+    );
 
 endmodule

@@ -332,6 +332,7 @@ module cpu_core (
         .alu_ctrl       (alu_ctrl),
         .in1            (exu_in1),
         .in2            (exu_in2),
+        .in3            (exu_in3),
         .out            (stp2_exu_out)
     );
 

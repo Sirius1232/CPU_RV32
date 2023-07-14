@@ -20,6 +20,7 @@ module cpu_exu (
         input       [4:0]   alu_ctrl,
         input       [63:0]  in1,
         input       [63:0]  in2,
+        input       [63:0]  in3,
         output  reg [63:0]  out
     );
 
@@ -54,6 +55,7 @@ module cpu_exu (
         .alu_ctrl   (alu_ctrl),
         .in1        (in1[31:0]),
         .in2        (in2[31:0]),
+        .in3        (in3[31:0]),
         .out        (out_alu_fp32)
     );
 

@@ -174,18 +174,22 @@ module cpu_idu (
                 // `STORE_FP: begin
                     
                 // end
-                // `MADD   : begin
-                    
-                // end
-                // `MSUB   : begin
-                    
-                // end
-                // `NMSUB  : begin
-                    
-                // end
-                // `NMADD  : begin
-                    
-                // end
+                `MADD   : begin
+                    fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
+                    alu_ctrl <= `ALU_MADD;
+                end
+                `MSUB   : begin
+                    fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
+                    alu_ctrl <= `ALU_MSUB;
+                end
+                `NMADD  : begin
+                    fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
+                    alu_ctrl <= `ALU_NMADD;
+                end
+                `NMSUB  : begin
+                    fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
+                    alu_ctrl <= `ALU_NMSUB;
+                end
                 `OP_FP  : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
                     case (funct7[6:1])
@@ -209,7 +213,7 @@ module cpu_idu (
                             endcase
                         end
                         `FMV_F  : begin
-                            fp_ctrl <= `INT;
+                            fp_ctrl <= `INT;  // 特例
                             alu_ctrl <= `ALU_ADD;
                         end
                         `FMV_X  : begin
@@ -349,6 +353,17 @@ module cpu_idu (
                     imm_en <= 2'b01;
                     imm1 <= 32'd0;
                     imm0 <= {{20{imm_s[11]}}, imm_s};
+                end
+                `MADD, `MSUB, `NMSUB, `NMADD   : begin
+                    rs_en <= 2'b00;
+                    frs_en <= 3'b111;
+                    wr_en <= 1'b0;
+                    fp_wr_en <= 1'b1;
+                    jmp_ctrl <= 3'b000;
+                    ram_ctrl <= 5'b00000;
+                    imm_en <= 2'b00;
+                    imm1 <= 32'd0;
+                    imm0 <= 32'd0;
                 end
                 `OP_FP  : begin
                     jmp_ctrl <= 3'b000;
