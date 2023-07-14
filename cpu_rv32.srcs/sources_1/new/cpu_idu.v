@@ -18,6 +18,7 @@ module cpu_idu (
         input               wait_exe,
         input       [31:0]  instruction,
         /*寄存器地址*/
+        output  reg [2:1]   rs_en,
         output  reg [3:1]   frs_en,
         output  reg [4:0]   rs1,
         output  reg [4:0]   rs2,
@@ -235,6 +236,7 @@ module cpu_idu (
     /**/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
+            rs_en <= 2'b00;
             frs_en <= 3'b000;
             wr_en <= 1'b0;
             fp_wr_en <= 1'b0;
@@ -245,6 +247,7 @@ module cpu_idu (
             imm0 <= 32'd0;
         end
         else if(wait_exe) begin
+            rs_en <= rs_en;
             frs_en <= frs_en;
             wr_en <= wr_en;
             fp_wr_en <= fp_wr_en;
@@ -257,6 +260,7 @@ module cpu_idu (
         else begin
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
+                    rs_en <= 2'b11;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -267,6 +271,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
+                    rs_en <= 2'b01;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -280,6 +285,7 @@ module cpu_idu (
                         imm0 <= imm_i;
                 end
                 `LUI    : begin
+                    rs_en <= 2'b00;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -290,6 +296,7 @@ module cpu_idu (
                     imm0 <= 32'd12;
                 end
                 `JAL    : begin
+                    rs_en <= 2'b00;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -300,6 +307,7 @@ module cpu_idu (
                     imm0 <= 32'd4;
                 end
                 `JALR   : begin
+                    rs_en <= 2'b00;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -310,6 +318,7 @@ module cpu_idu (
                     imm0 <= 32'd4;
                 end
                 `BRANCH : begin
+                    rs_en <= 2'b11;
                     frs_en <= 3'b000;
                     wr_en <= 1'b0;
                     fp_wr_en <= 1'b0;
@@ -320,6 +329,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `LOAD   : begin
+                    rs_en <= 2'b01;
                     frs_en <= 3'b000;
                     wr_en <= 1'b1;
                     fp_wr_en <= 1'b0;
@@ -330,6 +340,7 @@ module cpu_idu (
                     imm0 <= {{20{imm_i[11]}}, imm_i};
                 end
                 `STORE  : begin
+                    rs_en <= 2'b11;
                     frs_en <= 3'b000;
                     wr_en <= 1'b0;
                     fp_wr_en <= 1'b0;
@@ -347,26 +358,31 @@ module cpu_idu (
                     imm0 <= 32'd0;
                     case (funct7[6:1])
                         `FADD, `FSUB, `FMUL, `FMUM, `FSGNJ  : begin
+                            rs_en <= 2'b00;
                             frs_en <= 3'b011;
                             wr_en <= 1'b0;
                             fp_wr_en <= 1'b1;
                         end
                         `FDIV   : begin
+                            rs_en <= 2'b00;
                             frs_en <= (instruction[24:20]==5'd0) ? 3'b001 : 3'b011;
                             wr_en <= 1'b0;
                             fp_wr_en <= 1'b1;
                         end
                         `FCMP   : begin
+                            rs_en <= 2'b00;
                             frs_en <= 3'b011;
                             wr_en <= 1'b1;
                             fp_wr_en <= 1'b0;
                         end
                         `FMV_F, `FCVT_S  : begin
+                            rs_en <= 2'b01;
                             frs_en <= 3'b000;
                             wr_en <= 1'b0;
                             fp_wr_en <= 1'b1;
                         end
                         `FMV_X, `FCVT_W  : begin
+                            rs_en <= 2'b00;
                             frs_en <= 3'b001;
                             wr_en <= 1'b1;
                             fp_wr_en <= 1'b0;
@@ -374,6 +390,7 @@ module cpu_idu (
                     endcase
                 end
                 default : begin
+                    rs_en <= 2'b00;
                     frs_en <= 3'b000;
                     wr_en <= 1'b0;
                     fp_wr_en <= 1'b0;
