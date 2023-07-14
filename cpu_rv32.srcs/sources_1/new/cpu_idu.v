@@ -89,7 +89,7 @@ module cpu_idu (
             alu_ctrl <= `ALU_ADD;
         end
         else if(wait_exe) begin
-            fp_ctrl  <= `INT;
+            fp_ctrl  <= fp_ctrl;
             alu_ctrl <= alu_ctrl;
         end
         else begin
@@ -160,20 +160,14 @@ module cpu_idu (
                     fp_ctrl  <= `INT;
                     alu_ctrl <= {2'b01, funct3};
                 end
-                `LOAD   : begin
+                `LOAD, `STORE   : begin
                     fp_ctrl  <= `INT;
                     alu_ctrl <= `ALU_ADD;
                 end
-                `STORE  : begin
+                `LOAD_FP, `STORE_FP: begin
                     fp_ctrl  <= `INT;
                     alu_ctrl <= `ALU_ADD;
                 end
-                // `LOAD_FP: begin
-                    
-                // end
-                // `STORE_FP: begin
-                    
-                // end
                 `MADD   : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
                     alu_ctrl <= `ALU_MADD;
@@ -346,6 +340,28 @@ module cpu_idu (
                 `STORE  : begin
                     rs_en <= 2'b11;
                     frs_en <= 3'b000;
+                    wr_en <= 1'b0;
+                    fp_wr_en <= 1'b0;
+                    jmp_ctrl <= 3'b000;
+                    ram_ctrl <= {funct3, 2'b11};
+                    imm_en <= 2'b01;
+                    imm1 <= 32'd0;
+                    imm0 <= {{20{imm_s[11]}}, imm_s};
+                end
+                `LOAD_FP    : begin
+                    rs_en <= 2'b01;
+                    frs_en <= 3'b000;
+                    wr_en <= 1'b0;
+                    fp_wr_en <= 1'b1;
+                    jmp_ctrl <= 3'b000;
+                    ram_ctrl <= {funct3, 2'b01};
+                    imm_en <= 2'b01;
+                    imm1 <= 32'd0;
+                    imm0 <= {{20{imm_i[11]}}, imm_i};
+                end
+                `STORE_FP   : begin
+                    rs_en <= 2'b01;
+                    frs_en <= 3'b010;
                     wr_en <= 1'b0;
                     fp_wr_en <= 1'b0;
                     jmp_ctrl <= 3'b000;

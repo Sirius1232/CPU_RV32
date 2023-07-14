@@ -153,7 +153,7 @@ module cpu_core (
             load_flg_seq[3] <= load_flg_seq[2];
         end
         else begin
-            if(instruction[6:0]==`LOAD)
+            if(instruction[6:0]==`LOAD || instruction[6:0]==`LOAD_FP)
                 load_flg_seq[1] <= 1'b1;
             else
                 load_flg_seq[1] <= 1'b0;
@@ -244,8 +244,8 @@ module cpu_core (
     /*stp1-执行-stp2*/
     /*取指+译码 控制 执行*/
     /*执行模块的数据冲突问题*/
-    reg                 wait_exe_1, wait_exe_2;
-    assign  wait_exe = wait_exe_1 | wait_exe_2;
+    reg                 wait_exe_1, wait_exe_2, wait_exe_3;
+    assign  wait_exe = wait_exe_1 | wait_exe_2 | wait_exe_3;
     always @(*) begin
         if(stp1_rs1==stp2_rd && load_flg_seq[2]) begin
             if(stp1_rs_en[1] && stp2_wr_en && stp1_rs1!=5'd0)  // 整数
@@ -269,6 +269,16 @@ module cpu_core (
         end
         else
             wait_exe_2 = 1'b0;
+    end
+    always @(*) begin
+        if(stp1_rs3==stp2_rd && load_flg_seq[2]) begin
+            if(stp1_frs_en[3] && stp2_fp_wr_en)  // 浮点数
+                wait_exe_3 = 1'b1;
+            else
+                wait_exe_3 = 1'b0;
+        end
+        else
+            wait_exe_3 = 1'b0;
     end
     reg     [63:0]      data1, data2, data3;
     always @(*) begin
@@ -340,19 +350,11 @@ module cpu_core (
     /*stp2-访存-stp3*/
     /*译码+执行 控制 访存*/
     always @(*) begin
-        if(stp2_rs2==5'd0)  // 与寄存器值无关
-            ram_din = 64'd0;
-        else if(stp2_rs2==stp3_rd)
-            ram_din = stp3_data_rd;
-        else
-            ram_din = stp2_data2;
-    end
-    always @(*) begin
         if(stp2_rs2==stp3_rd) begin
-            if(stp2_rs_en[2] && stp3_wr_en && stp1_rs2!=5'd0)  // 整数
+            if(stp2_rs_en[2] && stp3_wr_en && stp2_rs2!=5'd0)  // 整数
                 ram_din = stp3_data_rd;
             else if(stp2_frs_en[2] && stp3_fp_wr_en)  // 浮点数
-                ram_din = stp3_data_rd;
+                ram_din = stp3_fp_data_rd;
             else
                 ram_din = stp2_rs_en[2] ? stp2_data2 : stp2_fdata2;
         end

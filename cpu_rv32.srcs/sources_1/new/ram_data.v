@@ -37,7 +37,7 @@ module ram_data (
             2'b00 : din = {56'b0, wr_data[7:0]};
             2'b01 : din = {48'b0, wr_data[15:0]};
             2'b10 : din = {32'b0, wr_data[31:0]};
-            default:din = 64'd0;
+            2'b11 : din = wr_data;
         endcase
     end
     /*读取*/
@@ -46,7 +46,7 @@ module ram_data (
             2'b00 : rd_data = {{56{~mask_code[2]&dout[7]}}, dout[7:0]};
             2'b01 : rd_data = {{48{~mask_code[2]&dout[15]}}, dout[15:0]};
             2'b10 : rd_data = {{32{~mask_code[2]&dout[31]}}, dout[31:0]};
-            default:rd_data = 64'd0;
+            2'b11 : rd_data = dout;
         endcase
     end
 
