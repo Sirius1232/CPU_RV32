@@ -51,7 +51,7 @@
 `define     ALU_F_S_W   5'b10010
 `define     ALU_F_S_WU  5'b10011
 `define     ALU_FMV_X_W 5'b10100
-`define     ALU_FMV_W_X 5'b10101
+// `define     ALU_FMV_W_X 5'b10101
 `define     ALU_MADD    5'b11000
 `define     ALU_MSUB    5'b11001
 `define     ALU_NMADD   5'b11010
@@ -131,5 +131,5 @@
 `define     FCVT_S  6'b110100   // 整数转换为浮点数
 `define     FCMP    6'b101000   // 浮点数比较
 /*注意下面两个*/
-`define     FMV     6'b111100   // 浮点数移动
-`define     FCLASS  6'b111000   // 浮点数分类
+`define     FMV_F   6'b111100   // 浮点数移动（x→f）
+`define     FMV_X   6'b111000   // 浮点数分类（f→x）

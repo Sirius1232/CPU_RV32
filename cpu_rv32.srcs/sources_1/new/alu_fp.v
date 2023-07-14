@@ -9,6 +9,8 @@ module alu_fp (
 
     wire    [31:0]      fadd, fmul, fdiv, fsqrt;
     wire                feq, flt;
+    reg     [3:0]       fclass;
+    wire    [31:0]      fp32_int, fp32_uint;
 
     //*****************************************************
     //**                    main code
@@ -30,6 +32,11 @@ module alu_fp (
             `ALU_FEQ    : out <= feq;
             `ALU_FLT    : out <= flt;
             `ALU_FLE    : out <= feq | flt;
+            `ALU_FMV_X_W: out <= in1;
+            `ALU_FCLASS : out <= fclass;
+            /*转为整数*/
+            `ALU_F_W_S  : out <= fp32_int;
+            `ALU_F_WU_S : out <= fp32_uint;
             default     : out <= 32'd0;
         endcase
     end
@@ -82,5 +89,44 @@ module alu_fp (
         .m_axis_result_tdata    (flt)
     );
 
+    fp32_fp2int fp32_fp2int_inst (
+        .s_axis_a_tvalid        (1'b1),
+        .s_axis_a_tdata         (in1),
+        .m_axis_result_tvalid   (),
+        .m_axis_result_tdata    (fp32_int)
+    );
+    fp32_fp2uint fp32_fp2uint_inst (
+        .s_axis_a_tvalid        (1'b1),
+        .s_axis_a_tdata         ({1'b0, in1[30:0]}),
+        .m_axis_result_tvalid   (),
+        .m_axis_result_tdata    (fp32_uint)
+    );
+
+    /*浮点数分类*/
+    // 无穷大：exp==8'hff, frac==23'd0
+    // 零：exp==8'd0, frac==23'd0
+    // 非规格化数：exp==8'd0, frac!=23'd0  // 用于表示更接近0的数
+    // NaN：exp==8'hff, frac!=23'd0（其中，frac最高位为1表示sNaN，为0表示qNaN）
+    wire                sign;
+    wire    [7:0]       exp;
+    wire    [22:0]      frac;
+    assign  {sign, exp, frac} = in1;
+    always @(*) begin
+        if(exp==8'hff) begin
+            if(frac==23'd0)  // 无穷大
+                fclass = sign ? 4'd0 : 4'd7;
+            else  // NaN
+                fclass = frac[22] ? 4'd8 : 4'd9;
+        end
+        else if(exp==8'h00) begin
+            if(frac==23'd0)  // 0
+                fclass = sign ? 4'd3 : 4'd4;
+            else  // 非规格化数
+                fclass = sign ? 4'd2 : 4'd5;
+        end
+        else begin  // 规格化数
+            fclass = sign ? 4'd1 : 4'd6;
+        end
+    end
 
 endmodule

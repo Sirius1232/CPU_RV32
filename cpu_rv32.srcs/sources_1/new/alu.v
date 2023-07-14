@@ -4,13 +4,14 @@ module alu (
         input       [4:0]   alu_ctrl,
         input       [31:0]  in1,
         input       [31:0]  in2,
-        output  reg [31:0]  out
+        output  reg [63:0]  out
     );
 
     wire    signed  [32:0]  mul_in1, mul_in2;
     wire    signed  [63:0]  mul;
     wire    signed  [32:0]  div_in1, div_in2;
     wire    signed  [31:0]  div, rem;
+    wire            [31:0]  fp32;
 
     //*****************************************************
     //**                    main code
@@ -51,9 +52,19 @@ module alu (
             `ALU_DIVU   : out <= div[31: 0];
             `ALU_REM    : out <= rem[31: 0];
             `ALU_REMU   : out <= rem[31: 0];
+            /*转为浮点数*/
+            `ALU_F_S_W  : out <= fp32;
+            `ALU_F_S_WU : out <= fp32;
             default     : out <= 32'd0;
         endcase
     end
+
+    fp32_int2fp fp32_int2fp_inst (
+        .s_axis_a_tvalid        (1'b1),
+        .s_axis_a_tdata         ({7'd0, ~alu_ctrl[0]&in1[31], in1}),
+        .m_axis_result_tvalid   (),
+        .m_axis_result_tdata    (fp32)
+    );
 
 
 endmodule
