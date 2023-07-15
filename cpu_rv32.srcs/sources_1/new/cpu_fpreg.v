@@ -18,6 +18,8 @@ module cpu_fpreg (
         output      [63:0]  data2,
         input       [4:0]   rs3,
         output      [63:0]  data3,
+        input       [4:0]   rs4,
+        output      [63:0]  data4,
         input               wr_en,
         input       [4:0]   wr_addr,
         input       [63:0]  wr_data
@@ -32,6 +34,7 @@ module cpu_fpreg (
     assign  data1 = fp_register[rs1];
     assign  data2 = fp_register[rs2];
     assign  data3 = fp_register[rs3];
+    assign  data4 = fp_register[rs4];
 
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin

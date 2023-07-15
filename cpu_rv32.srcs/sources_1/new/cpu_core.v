@@ -28,8 +28,8 @@ module cpu_core (
     reg     [31:0]      instruction;
     wire    [15:0]      pc_now;
     wire    [4:0]       stp1_rs1, stp1_rs2, stp1_rs3, stp1_rd;
-    wire    [63:0]      stp1_data1, stp1_data2, stp3_data_rd;
-    wire    [63:0]      stp1_fdata1, stp1_fdata2, stp1_fdata3, stp3_fp_data_rd;
+    wire    [63:0]      stp1_data1, stp1_data2, stp2_data2, stp3_data_rd;
+    wire    [63:0]      stp1_fdata1, stp1_fdata2, stp1_fdata3, stp2_fdata2, stp3_fp_data_rd;
     wire    [2:1]       stp1_rs_en;
     wire    [1:0]       imm_en;
     wire    [31:0]      imm1, imm0;
@@ -59,8 +59,6 @@ module cpu_core (
     reg                 stp1_jmp_pred;
     reg     [2:1]       stp2_rs_en;
     reg     [3:1]       stp2_frs_en;
-    reg     [63:0]      stp2_data2;
-    reg     [63:0]      stp2_fdata2;
     reg                 stp2_jmp_pred;
     reg     [4:0]       stp2_rs2;
     reg                 stp2_wr_en, stp3_wr_en;
@@ -96,8 +94,6 @@ module cpu_core (
             stp2_rs_en <= 2'b00;
             stp2_frs_en <= 3'b000;
             stp2_rs2 <= 5'd0;
-            stp2_data2 <= 64'd0;
-            stp2_fdata2 <= 64'd0;
             stp2_ram_ctrl <= 5'b00000;
             stp2_jmp_pred <= 1'b0;
             branch_flag <= 1'b0;
@@ -109,8 +105,6 @@ module cpu_core (
             stp2_rs_en <= stp1_rs_en;
             stp2_frs_en <= stp1_frs_en;
             stp2_rs2 <= stp1_rs2;
-            stp2_data2 <= stp1_data2;
-            stp2_fdata2 <= stp1_fdata2;
             stp2_ram_ctrl <= stp1_ram_ctrl;
             stp2_jmp_pred <= stp1_jmp_pred;
             branch_flag <= jmp_ctrl[0];
@@ -362,7 +356,7 @@ module cpu_core (
             ram_din = stp2_rs_en[2] ? stp2_data2 : stp2_fdata2;
     end
     assign  ram_addr = stp2_ram_ctrl[0] ? stp2_exu_out[31:0] : 32'hzzzz;
-    assign  stp3_data_rd = stp3_ram_ctrl[0] ? ram_dout[31:0] : stp3_exu_out[31:0];
+    assign  stp3_data_rd = stp3_ram_ctrl[0] ? {32'd0, ram_dout[31:0]} : {32'd0, stp3_exu_out[31:0]};
     assign  stp3_fp_data_rd = stp3_ram_ctrl[0] ? ram_dout[63:0] : stp3_exu_out[63:0];
 
 
@@ -377,6 +371,8 @@ module cpu_core (
         .data2          (stp1_data2),
         .jmp_rs         (jmp_rs),
         .data_jmp_rs    (jmp_data_rs),
+        .rs4            (stp2_rs2),
+        .data4          (stp2_data2),
         .wr_en          (stp3_wr_en),
         .rd             (stp3_rd),
         .data_rd        (stp3_data_rd)
@@ -391,6 +387,8 @@ module cpu_core (
         .data2          (stp1_fdata2),
         .rs3            (stp1_rs3),
         .data3          (stp1_fdata3),
+        .rs4            (stp2_rs2),
+        .data4          (stp2_fdata2),
         .wr_en          (stp3_fp_wr_en),
         .wr_addr        (stp3_rd),
         .wr_data        (stp3_fp_data_rd)
