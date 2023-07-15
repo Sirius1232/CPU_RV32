@@ -1,18 +1,19 @@
 `include "command.vh"
 
-module alu_fp (
+module alu_fp64 (
         input       [4:0]   alu_ctrl,
-        input       [31:0]  in1,
-        input       [31:0]  in2,
-        input       [31:0]  in3,
-        output  reg [31:0]  out
+        input       [63:0]  in1,
+        input       [63:0]  in2,
+        input       [63:0]  in3,
+        output  reg [63:0]  out
     );
 
-    wire    [31:0]      fadd, fmul, fdiv, fsqrt;
+    wire    [63:0]      fadd, fmul, fdiv, fsqrt;
     wire                feq, flt;
     reg     [3:0]       fclass;
-    wire    [31:0]      fp32_int, fp32_uint;
-    wire    [31:0]      fmadd;
+    wire    [31:0]      fp64_int, fp64_uint;
+    wire    [63:0]      fmadd;
+    wire    [31:0]      fp32;
 
     //*****************************************************
     //**                    main code
@@ -21,42 +22,42 @@ module alu_fp (
     always @(*) begin
         case (alu_ctrl)
             /*基础运算*/
-            `ALU_FADD   : out <= fadd;
-            `ALU_FSUB   : out <= fadd;
-            `ALU_FMUL   : out <= fmul;
-            `ALU_FDIV   : out <= fdiv;
-            `ALU_FSQRT  : out <= fsqrt;
-            `ALU_FMIN   : out <= flt ? in1 : in2;
-            `ALU_FMAX   : out <= flt ? in2 : in1;
-            `ALU_FSGNJ  : out <= {in2[31], in1[30:0]};
-            `ALU_FSGNJN : out <= {~in2[31], in1[30:0]};
-            `ALU_FSGNJX : out <= {in1[31]^in2[31], in1[30:0]};
-            `ALU_FEQ    : out <= feq;
-            `ALU_FLT    : out <= flt;
-            `ALU_FLE    : out <= feq | flt;
-            `ALU_FMV_X_W: out <= in1;
-            `ALU_FCLASS : out <= fclass;
+            `ALU_FADD   : out = fadd;
+            `ALU_FSUB   : out = fadd;
+            `ALU_FMUL   : out = fmul;
+            `ALU_FDIV   : out = fdiv;
+            `ALU_FSQRT  : out = fsqrt;
+            `ALU_FMIN   : out = flt ? in1 : in2;
+            `ALU_FMAX   : out = flt ? in2 : in1;
+            `ALU_FSGNJ  : out = {in2[63], in1[62:0]};
+            `ALU_FSGNJN : out = {~in2[63], in1[62:0]};
+            `ALU_FSGNJX : out = {in1[63]^in2[63], in1[62:0]};
+            `ALU_FEQ    : out = feq;
+            `ALU_FLT    : out = flt;
+            `ALU_FLE    : out = feq | flt;
+            `ALU_FCLASS : out = fclass;
             /*转为整数*/
-            `ALU_F_W_S  : out <= fp32_int;
-            `ALU_F_WU_S : out <= fp32_uint;
+            `ALU_F_W_S  : out = fp64_int;
+            `ALU_F_WU_S : out = fp64_uint;
+            `ALU_F_D    : out = fp32;
             /*R4*/
-            `ALU_MADD   : out <= fmadd;
-            `ALU_MSUB   : out <= fmadd;
-            `ALU_NMADD  : out <= fmadd;
-            `ALU_NMSUB  : out <= fmadd;
-            default     : out <= 32'd0;
+            `ALU_FMADD  : out = fmadd;
+            `ALU_FMSUB  : out = fmadd;
+            `ALU_FNMADD : out = fmadd;
+            `ALU_FNMSUB : out = fmadd;
+            default     : out = 64'd0;
         endcase
     end
 
-    fp32_addsub fp32_addsub_inst (
+    fp64_addsub fp64_addsub_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .s_axis_b_tvalid        (1'b1),
-        .s_axis_b_tdata         ({alu_ctrl[0]^in2[31], in2[30:0]}),
+        .s_axis_b_tdata         ({alu_ctrl[0]^in2[63], in2[62:0]}),
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (fadd)
     );
-    fp32_mul fp32_mul_inst (
+    fp64_mul fp64_mul_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .s_axis_b_tvalid        (1'b1),
@@ -64,7 +65,7 @@ module alu_fp (
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (fmul)
     );
-    fp32_div fp32_div_inst (
+    fp64_div fp64_div_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .s_axis_b_tvalid        (1'b1),
@@ -72,14 +73,14 @@ module alu_fp (
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (fdiv)
     );
-    fp32_sqrt fp32_sqrt_inst (
+    fp64_sqrt fp64_sqrt_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (fsqrt)
     );
 
-    fp32_cmp_eq fp32_cmp_eq_inst (
+    fp64_cmp_eq fp64_cmp_eq_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .s_axis_b_tvalid        (1'b1),
@@ -87,7 +88,7 @@ module alu_fp (
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (feq)
     );
-    fp32_cmp_lt fp32_cmp_lt_inst (
+    fp64_cmp_lt fp64_cmp_lt_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .s_axis_b_tvalid        (1'b1),
@@ -96,37 +97,39 @@ module alu_fp (
         .m_axis_result_tdata    (flt)
     );
 
-    fp32_fp2int fp32_fp2int_inst (
+    fp64_fp2int fp64_fp2int_inst (
         .s_axis_a_tvalid        (1'b1),
         .s_axis_a_tdata         (in1),
         .m_axis_result_tvalid   (),
-        .m_axis_result_tdata    (fp32_int)
+        .m_axis_result_tdata    (fp64_int)
     );
-    fp32_fp2uint fp32_fp2uint_inst (
+    fp64_fp2uint fp64_fp2uint_inst (
         .s_axis_a_tvalid        (1'b1),
-        .s_axis_a_tdata         ({1'b0, in1[30:0]}),
+        .s_axis_a_tdata         ({1'b0, in1[62:0]}),
         .m_axis_result_tvalid   (),
-        .m_axis_result_tdata    (fp32_uint)
+        .m_axis_result_tdata    (fp64_uint)
+    );
+    fp_d2s fp_d2s_inst (
+        .s_axis_a_tvalid        (1'b1),
+        .s_axis_a_tdata         (in1),
+        .m_axis_result_tvalid   (),
+        .m_axis_result_tdata    (fp32)
     );
 
     /*浮点数分类*/
-    // 无穷大：exp==8'hff, frac==23'd0
-    // 零：exp==8'd0, frac==23'd0
-    // 非规格化数：exp==8'd0, frac!=23'd0  // 用于表示更接近0的数
-    // NaN：exp==8'hff, frac!=23'd0（其中，frac最高位为1表示sNaN，为0表示qNaN）
     wire                sign;
-    wire    [7:0]       exp;
-    wire    [22:0]      frac;
+    wire    [10:0]      exp;
+    wire    [51:0]      frac;
     assign  {sign, exp, frac} = in1;
     always @(*) begin
-        if(exp==8'hff) begin
-            if(frac==23'd0)  // 无穷大
+        if(exp==11'h7ff) begin
+            if(frac==52'd0)  // 无穷大
                 fclass = sign ? 4'd0 : 4'd7;
             else  // NaN
-                fclass = frac[22] ? 4'd8 : 4'd9;
+                fclass = frac[51] ? 4'd8 : 4'd9;
         end
-        else if(exp==8'h00) begin
-            if(frac==23'd0)  // 0
+        else if(exp==11'h000) begin
+            if(frac==52'd0)  // 0
                 fclass = sign ? 4'd3 : 4'd4;
             else  // 非规格化数
                 fclass = sign ? 4'd2 : 4'd5;
@@ -136,13 +139,13 @@ module alu_fp (
         end
     end
 
-    fp32_madd fp32_madd_inst (
+    fp64_madd fp64_madd_inst (
         .s_axis_a_tvalid        (1'b1),
-        .s_axis_a_tdata         ({alu_ctrl[1]^in1[31], in1[30:0]}),
+        .s_axis_a_tdata         ({alu_ctrl[1]^in1[63], in1[62:0]}),
         .s_axis_b_tvalid        (1'b1),
         .s_axis_b_tdata         (in2),
         .s_axis_c_tvalid        (1'b1),
-        .s_axis_c_tdata         ({alu_ctrl[0]^in3[31], in3[30:0]}),
+        .s_axis_c_tdata         ({alu_ctrl[0]^in3[63], in3[62:0]}),
         .m_axis_result_tvalid   (),
         .m_axis_result_tdata    (fmadd)
     );

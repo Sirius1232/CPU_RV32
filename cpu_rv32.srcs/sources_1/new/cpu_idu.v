@@ -170,19 +170,19 @@ module cpu_idu (
                 end
                 `MADD   : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
-                    alu_ctrl <= `ALU_MADD;
+                    alu_ctrl <= `ALU_FMADD;
                 end
                 `MSUB   : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
-                    alu_ctrl <= `ALU_MSUB;
+                    alu_ctrl <= `ALU_FMSUB;
                 end
                 `NMADD  : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
-                    alu_ctrl <= `ALU_NMADD;
+                    alu_ctrl <= `ALU_FNMADD;
                 end
                 `NMSUB  : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
-                    alu_ctrl <= `ALU_NMSUB;
+                    alu_ctrl <= `ALU_FNMSUB;
                 end
                 `OP_FP  : begin
                     fp_ctrl <= funct7[0] ? `FP_D : `FP_S;
@@ -218,8 +218,14 @@ module cpu_idu (
                         end
                         `FCVT_W : alu_ctrl <= (instruction[24:20]==5'd0) ? `ALU_F_W_S : `ALU_F_WU_S;
                         `FCVT_S : begin
-                            fp_ctrl <= `INT;
-                            alu_ctrl <= (instruction[24:20]==5'd0) ? `ALU_F_S_W : `ALU_F_S_WU;
+                            fp_ctrl <= `INT;  // 特例
+                            alu_ctrl <= (instruction[24:20]==5'd0) ? 
+                                        (funct7[0] ? `ALU_F_D_W : `ALU_F_S_W) : 
+                                        (funct7[0] ? `ALU_F_D_WU : `ALU_F_S_WU);
+                        end
+                        `FCVT_D : begin
+                            fp_ctrl <= ~funct7[0] ? `FP_D : `FP_S;  // 特例
+                            alu_ctrl <= `ALU_F_D;
                         end
                     endcase
                 end
@@ -417,6 +423,12 @@ module cpu_idu (
                             frs_en <= 3'b001;
                             wr_en <= 1'b1;
                             fp_wr_en <= 1'b0;
+                        end
+                        `FCVT_D : begin
+                            rs_en <= 2'b00;
+                            frs_en <= 3'b001;
+                            wr_en <= 1'b0;
+                            fp_wr_en <= 1'b1;
                         end
                     endcase
                 end

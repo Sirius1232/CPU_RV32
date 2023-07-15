@@ -29,7 +29,7 @@ module cpu_core (
     wire    [15:0]      pc_now;
     wire    [4:0]       stp1_rs1, stp1_rs2, stp1_rs3, stp1_rd;
     wire    [63:0]      stp1_data1, stp1_data2, stp2_data2, stp3_data_rd;
-    wire    [63:0]      stp1_fdata1, stp1_fdata2, stp1_fdata3, stp2_fdata2, stp3_fp_data_rd;
+    wire    [63:0]      stp1_fdata1, stp1_fdata2, stp1_fdata3, stp2_fdata2;
     wire    [2:1]       stp1_rs_en;
     wire    [1:0]       imm_en;
     wire    [31:0]      imm1, imm0;
@@ -348,7 +348,7 @@ module cpu_core (
             if(stp2_rs_en[2] && stp3_wr_en && stp2_rs2!=5'd0)  // 整数
                 ram_din = stp3_data_rd;
             else if(stp2_frs_en[2] && stp3_fp_wr_en)  // 浮点数
-                ram_din = stp3_fp_data_rd;
+                ram_din = stp3_data_rd;
             else
                 ram_din = stp2_rs_en[2] ? stp2_data2 : stp2_fdata2;
         end
@@ -356,8 +356,7 @@ module cpu_core (
             ram_din = stp2_rs_en[2] ? stp2_data2 : stp2_fdata2;
     end
     assign  ram_addr = stp2_ram_ctrl[0] ? stp2_exu_out[31:0] : 32'hzzzz;
-    assign  stp3_data_rd = stp3_ram_ctrl[0] ? {32'd0, ram_dout[31:0]} : {32'd0, stp3_exu_out[31:0]};
-    assign  stp3_fp_data_rd = stp3_ram_ctrl[0] ? ram_dout[63:0] : stp3_exu_out[63:0];
+    assign  stp3_data_rd = stp3_ram_ctrl[0] ? ram_dout[63:0] : stp3_exu_out[63:0];
 
 
     /*stp3-写回*/
@@ -375,7 +374,7 @@ module cpu_core (
         .data4          (stp2_data2),
         .wr_en          (stp3_wr_en),
         .rd             (stp3_rd),
-        .data_rd        (stp3_data_rd)
+        .data_rd        (stp3_data_rd[31:0])
     );
 
     cpu_fpreg cpu_fpreg_inst(
@@ -391,7 +390,7 @@ module cpu_core (
         .data4          (stp2_fdata2),
         .wr_en          (stp3_fp_wr_en),
         .wr_addr        (stp3_rd),
-        .wr_data        (stp3_fp_data_rd)
+        .wr_data        (stp3_data_rd)
     );
 
 

@@ -24,8 +24,9 @@ module cpu_exu (
         output  reg [63:0]  out
     );
 
-    wire    [31:0]      out_alu;
-    wire    [31:0]      out_alu_fp32;
+    wire    [63:0]      out_alu;
+    wire    [63:0]      out_alu_fp32;
+    wire    [63:0]      out_alu_fp64;
 
     //*****************************************************
     //**                    main code
@@ -39,6 +40,7 @@ module cpu_exu (
             case (fp_ctrl)
                 `INT    : out <= out_alu;
                 `FP_S   : out <= out_alu_fp32;
+                `FP_D   : out <= out_alu_fp64;
                 default : out <= 64'd0;
             endcase
         end
@@ -51,12 +53,20 @@ module cpu_exu (
         .out        (out_alu)
     );
 
-    alu_fp alu_fp_inst(
+    alu_fp32 alu_fp32_inst(
         .alu_ctrl   (alu_ctrl),
         .in1        (in1[31:0]),
         .in2        (in2[31:0]),
         .in3        (in3[31:0]),
         .out        (out_alu_fp32)
+    );
+
+    alu_fp64 alu_fp64_inst(
+        .alu_ctrl   (alu_ctrl),
+        .in1        (in1[63:0]),
+        .in2        (in2[63:0]),
+        .in3        (in3[63:0]),
+        .out        (out_alu_fp64)
     );
 
 
