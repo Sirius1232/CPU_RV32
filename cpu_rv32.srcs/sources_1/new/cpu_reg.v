@@ -21,6 +21,8 @@ module cpu_reg (
         output      [31:0]  data2,
         input       [4:0]   jmp_rs,
         output      [31:0]  data_jmp_rs,
+        input       [4:0]   rs4,
+        output      [31:0]  data4,
         input               wr_en,  // 写使能
         input       [4:0]   rd,  // 写寄存器地址
         input       [31:0]  data_rd  // 写数据
@@ -36,6 +38,7 @@ module cpu_reg (
     assign  data1 = register[rs1];
     assign  data2 = register[rs2];
     assign  data_jmp_rs = register[jmp_rs];
+    assign  data4 = register[rs4];
 
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin

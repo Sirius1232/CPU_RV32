@@ -27,7 +27,7 @@ module cpu_exu (
     //*****************************************************
 
     always @(posedge clk) begin
-        if(!rst_n || flush_flag | wait_exe) begin
+        if(!rst_n || flush_flag || wait_exe) begin
             out <= 32'd0;
         end
         else begin

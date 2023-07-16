@@ -18,6 +18,7 @@ module cpu_idu (
         input               wait_exe,
         input       [31:0]  instruction,
         /*寄存器地址*/
+        output  reg [2:1]   rs_en,
         output  reg [4:0]   rs1,
         output  reg [4:0]   rs2,
         output  reg [4:0]   rd,
@@ -85,15 +86,27 @@ module cpu_idu (
         else begin
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
-                    case (funct3)
-                        `ADD    : alu_ctrl <= (funct7==`BASE) ? `ALU_ADD : `ALU_SUB;
-                        `SLL    : alu_ctrl <= `ALU_SLL;
-                        `SLT    : alu_ctrl <= `ALU_LT;
-                        `SLTU   : alu_ctrl <= `ALU_LTU;
-                        `XOR    : alu_ctrl <= `ALU_XOR;
-                        `SRL    : alu_ctrl <= (funct7==`BASE) ? `ALU_SRL : `ALU_SRA;
-                        `OR     : alu_ctrl <= `ALU_OR;
-                        `AND    : alu_ctrl <= `ALU_AND;
+                    case (funct7)
+                        `BASE   : begin
+                            case (funct3)
+                                `ADD    : alu_ctrl <= `ALU_ADD;
+                                `SLL    : alu_ctrl <= `ALU_SLL;
+                                `SLT    : alu_ctrl <= `ALU_LT;
+                                `SLTU   : alu_ctrl <= `ALU_LTU;
+                                `XOR    : alu_ctrl <= `ALU_XOR;
+                                `SRL    : alu_ctrl <= `ALU_SRL;
+                                `OR     : alu_ctrl <= `ALU_OR;
+                                `AND    : alu_ctrl <= `ALU_AND;
+                            endcase
+                        end
+                        `SPEC   : begin
+                            case (funct3)
+                                `ADD    : alu_ctrl <= `ALU_SUB;
+                                `SRL    : alu_ctrl <= `ALU_SRA;
+                                default : alu_ctrl <= `ALU_NOP;
+                            endcase
+                        end
+                        default : alu_ctrl <= `ALU_NOP;
                     endcase
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
@@ -126,7 +139,7 @@ module cpu_idu (
                 `STORE  : begin
                     alu_ctrl <= `ALU_ADD;
                 end
-                default : alu_ctrl <= 5'bzzzzz;
+                default : alu_ctrl <= `ALU_NOP;
             endcase
         end
     end
@@ -134,6 +147,7 @@ module cpu_idu (
     /**/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
+            rs_en <= 2'b00;
             wr_en <= 1'b0;
             jmp_ctrl <= 3'b000;
             ram_ctrl <= 5'b00000;
@@ -142,6 +156,7 @@ module cpu_idu (
             imm0 <= 32'd0;
         end
         else if(wait_exe) begin
+            rs_en <= rs_en;
             wr_en <= wr_en;
             jmp_ctrl <= jmp_ctrl;
             ram_ctrl <= ram_ctrl;
@@ -152,6 +167,7 @@ module cpu_idu (
         else begin
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
+                    rs_en <= 2'b11;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
@@ -160,6 +176,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
+                    rs_en <= 2'b01;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
@@ -171,6 +188,7 @@ module cpu_idu (
                         imm0 <= imm_i;
                 end
                 `LUI    : begin
+                    rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
@@ -179,6 +197,7 @@ module cpu_idu (
                     imm0 <= 32'd12;
                 end
                 `JAL    : begin
+                    rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b010;
                     ram_ctrl <= 5'b00000;
@@ -187,6 +206,7 @@ module cpu_idu (
                     imm0 <= 32'd4;
                 end
                 `JALR   : begin
+                    rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b110;
                     ram_ctrl <= 5'b00000;
@@ -195,6 +215,7 @@ module cpu_idu (
                     imm0 <= 32'd4;
                 end
                 `BRANCH : begin
+                    rs_en <= 2'b11;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b001;
                     ram_ctrl <= 5'b00000;
@@ -203,6 +224,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `LOAD   : begin
+                    rs_en <= 2'b01;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= {funct3, 2'b01};
@@ -211,6 +233,7 @@ module cpu_idu (
                     imm0 <= {{20{imm_i[11]}}, imm_i};
                 end
                 `STORE  : begin
+                    rs_en <= 2'b11;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= {funct3, 2'b11};
@@ -219,6 +242,7 @@ module cpu_idu (
                     imm0 <= {{20{imm_s[11]}}, imm_s};
                 end
                 default : begin
+                    rs_en <= 2'b00;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b000;
                     ram_ctrl <= 5'b00000;
