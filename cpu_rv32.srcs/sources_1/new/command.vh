@@ -1,4 +1,7 @@
 `define     NOP         32'h00000013// nop指令
+`define     X0          5'd0
+`define     X1          5'd1
+`define     X2          5'd2
 
 /*ALU*/
 `define     ALU_NOP     5'bzzzzz

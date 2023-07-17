@@ -25,7 +25,9 @@ module cpu_core (
         output  reg [31:0]  ram_din
     );
 
+    wire                decompr_en;
     reg     [31:0]      instruction;
+    wire    [31:0]      instr_decompr, instr_now;
     wire    [15:0]      pc_now;
     wire    [4:0]       stp1_rs1, stp1_rs2, stp1_rd;
     wire    [31:0]      stp1_data1, stp1_data2, stp3_data_rd;
@@ -86,11 +88,11 @@ module cpu_core (
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag || wait_exe) begin
             stp2_rs_en <= 2'b00;
-            stp2_rs2 <= 5'd0;
+            stp2_rs2 <= `X0;
             stp2_ram_ctrl <= 5'b00000;
             stp2_jmp_pred <= 1'b0;
             branch_flag <= 1'b0;
-            stp2_rd <= 5'd0;
+            stp2_rd <= `X0;
             stp2_wr_en <= 1'b0;
         end
         else begin
@@ -108,7 +110,7 @@ module cpu_core (
         if(!rst_n) begin
             stp3_ram_ctrl <= 5'b00000;
             stp3_out <= 32'd0;
-            stp3_rd <= 5'd0;
+            stp3_rd <= `X0;
             stp3_wr_en <= 1'b0;
         end
         else begin
@@ -157,27 +159,28 @@ module cpu_core (
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
         .wait_jmp       (wait_jmp),
+        .decompr_en     (decompr_en),
         .jmp_pred       (jmp_pred),
         .jmp_reg_en     (jmp_reg_en),
         .jmp_rs         (jmp_rs),
         .jmp_data       (jmp_data),
         .pc_now         (pc_now),
         .pc             (pc),
-        .instruction    (pc_instr)
+        .instruction    (instr_now)
     );
     always @(*) begin
         if(flush_flag)
             instruction = `NOP;
         else if(wait_exe)
-            instruction = pc_instr;
+            instruction = instr_now;
         else if(wait_jmp)
             instruction = `NOP;
         else
-            instruction = pc_instr;
+            instruction = instr_now;
     end
     /*取指模块的数据冲突问题*/
     always @(*) begin
-        if(!jmp_reg_en || jmp_rs==5'd0)  // 非寄存器链接或链接到x0
+        if(!jmp_reg_en || jmp_rs==`X0)  // 非寄存器链接或链接到x0
             wait_jmp = 1'b0;
         else if(jmp_rs==stp1_rd && stp1_wr_en)
             wait_jmp = 1'b1;
@@ -187,7 +190,7 @@ module cpu_core (
             wait_jmp = 1'b0;
     end
     always @(*) begin
-        if(jmp_rs==5'd0)
+        if(jmp_rs==`X0)
             jmp_data = 32'd0;
         else if(jmp_rs==stp2_rd)
             jmp_data = stp2_exu_out;
@@ -199,11 +202,18 @@ module cpu_core (
 
 
     /*stp0-译码-stp1*/
+    assign  decompr_en = ~&pc_instr[1:0];
+    assign  instr_now = decompr_en ? instr_decompr : pc_instr;
+    decompress u_decompress(
+        .instr_c        (pc_instr[15:0]),
+        .instruction    (instr_decompr)
+    );
     cpu_idu cpu_idu_inst(
         .clk            (clk),
         .rst_n          (rst_n),
         .flush_flag     (flush_flag),
         .wait_exe       (wait_exe),
+        .decompr_en     (decompr_en),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
         .rs_en          (stp1_rs_en),
@@ -225,30 +235,30 @@ module cpu_core (
     reg                 wait_exe_1, wait_exe_2;
     assign  wait_exe = wait_exe_1 | wait_exe_2;
     always @(*) begin
-        if(stp1_rs_en[1] && stp1_rs1!=5'd0 && stp1_rs1==stp2_rd && load_flg_seq[2] && stp2_wr_en)
+        if(stp1_rs_en[1] && stp1_rs1!=`X0 && stp1_rs1==stp2_rd && load_flg_seq[2] && stp2_wr_en)
             wait_exe_1 = 1'b1;
         else
             wait_exe_1 = 1'b0;
     end
     always @(*) begin
-        if(stp1_rs_en[2] && stp1_rs2!=5'd0 && stp1_rs2==stp2_rd && load_flg_seq[2] && stp2_wr_en)
+        if(stp1_rs_en[2] && stp1_rs2!=`X0 && stp1_rs2==stp2_rd && load_flg_seq[2] && stp2_wr_en)
             wait_exe_2 = 1'b1;
         else
             wait_exe_2 = 1'b0;
     end
     reg     [31:0]      data1, data2;
     always @(*) begin
-        if(stp1_rs_en[1] && stp1_rs1!=5'd0 && stp1_rs1==stp2_rd && stp2_wr_en)  // 执行的输出
+        if(stp1_rs_en[1] && stp1_rs1!=`X0 && stp1_rs1==stp2_rd && stp2_wr_en)  // 执行的输出
             data1 = stp2_exu_out;
-        else if(stp1_rs_en[1] && stp1_rs1!=5'd0 && stp1_rs1==stp3_rd && stp3_wr_en)  // 访存的输出
+        else if(stp1_rs_en[1] && stp1_rs1!=`X0 && stp1_rs1==stp3_rd && stp3_wr_en)  // 访存的输出
             data1 = stp3_data_rd;
         else
             data1 = stp1_data1;
     end
     always @(*) begin
-        if(stp1_rs_en[2] && stp1_rs2!=5'd0 && stp1_rs2==stp2_rd && stp2_wr_en)  // 执行的输出
+        if(stp1_rs_en[2] && stp1_rs2!=`X0 && stp1_rs2==stp2_rd && stp2_wr_en)  // 执行的输出
             data2 = stp2_exu_out;
-        else if(stp1_rs_en[2] && stp1_rs2!=5'd0 && stp1_rs2==stp3_rd && stp3_wr_en)  // 访存的输出
+        else if(stp1_rs_en[2] && stp1_rs2!=`X0 && stp1_rs2==stp3_rd && stp3_wr_en)  // 访存的输出
             data2 = stp3_data_rd;
         else
             data2 = stp1_data2;
@@ -270,7 +280,7 @@ module cpu_core (
     /*stp2-访存-stp3*/
     /*译码+执行 控制 访存*/
     always @(*) begin
-        if(stp2_rs_en[2] && stp2_rs2!=5'd0 && stp2_rs2==stp3_rd && stp3_wr_en)
+        if(stp2_rs_en[2] && stp2_rs2!=`X0 && stp2_rs2==stp3_rd && stp3_wr_en)
             ram_din = stp3_data_rd;
         else
             ram_din = stp2_data2;
