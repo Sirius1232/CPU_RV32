@@ -48,7 +48,12 @@ module decompress (
         case (opcode)
             2'b00   : begin
                 case (funct3)
-                    3'b000  : instruction = {uimm_4spn, `X2, `ADD, rd_, `OP_IMM};  // c.addi4spn
+                    3'b000  : begin
+                        if(instr_c[12:5]!=8'd0)
+                            instruction = {uimm_4spn, `X2, `ADD, rd_, `OP_IMM};  // c.addi4spn
+                        else
+                            instruction = `NOP;
+                    end
                     3'b010  : instruction = {uimm_cw, rs1_, `LW, rd_, `LOAD};  // c.lw
                     3'b110  : instruction = {uimm_cw[11:5], rs2_, rs1_, `SW, uimm_cw[4:0], `STORE};  // c.sw
                     default : instruction = `NOP;
@@ -72,7 +77,7 @@ module decompress (
                                     2'b11   : instruction = {`BASE, rs2_, rd_, `AND, rd_, `OP};  // c.and
                                     2'b10   : instruction = {`BASE, rs2_, rd_, `OR, rd_, `OP};  // c.or
                                     2'b01   : instruction = {`BASE, rs2_, rd_, `XOR, rd_, `OP};  // c.xor
-                                    2'b00   : instruction = {`BASE, rs2_, rd_, `SUB, rd_, `OP};  // c.sub
+                                    2'b00   : instruction = {`SPEC, rs2_, rd_, `ADD, rd_, `OP};  // c.sub
                                 endcase
                             end
                             2'b10   : instruction = {imm_ci[11:0], rd, `AND, rd_, `OP_IMM};  // c.andi
