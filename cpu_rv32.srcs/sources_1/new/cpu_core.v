@@ -25,6 +25,7 @@ module cpu_core (
         output  reg [31:0]  ram_din
     );
 
+    wire                pc_en;  // 操作数使用pc寄存器
     wire                decompr_en;
     reg     [31:0]      instruction;
     wire    [31:0]      instr_decompr, instr_now;
@@ -216,6 +217,7 @@ module cpu_core (
         .decompr_en     (decompr_en),
         .instruction    (instruction),
         .alu_ctrl       (alu_ctrl),
+        .pc_en          (pc_en),
         .rs_en          (stp1_rs_en),
         .rs1            (stp1_rs1),
         .rs2            (stp1_rs2),
@@ -263,7 +265,7 @@ module cpu_core (
         else
             data2 = stp1_data2;
     end
-    assign  exu_in1 = jmp_ctrl[1] ? stp1_pc_now : (imm_en[1] ? imm1 : data1);
+    assign  exu_in1 = pc_en ? stp1_pc_now : (imm_en[1] ? imm1 : data1);
     assign  exu_in2 = imm_en[0] ? imm0 : data2;
     cpu_exu cpu_exu_inst(
         .clk            (clk),

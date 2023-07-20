@@ -19,6 +19,7 @@ module cpu_idu (
         input               decompr_en,
         input       [31:0]  instruction,
         /*寄存器地址*/
+        output  reg         pc_en,
         output  reg [2:1]   rs_en,
         output  reg [4:0]   rs1,
         output  reg [4:0]   rs2,
@@ -122,24 +123,13 @@ module cpu_idu (
                         `AND    : alu_ctrl <= `ALU_AND;
                     endcase
                 end
-                `LUI    : begin
-                    alu_ctrl <= `ALU_SLL;
-                end
-                `JAL    : begin
-                    alu_ctrl <= `ALU_ADD;
-                end
-                `JALR   : begin
-                    alu_ctrl <= `ALU_ADD;
-                end
-                `BRANCH : begin
-                    alu_ctrl <= {2'b01, funct3};
-                end
-                `LOAD   : begin
-                    alu_ctrl <= `ALU_ADD;
-                end
-                `STORE  : begin
-                    alu_ctrl <= `ALU_ADD;
-                end
+                `AUIPC  : alu_ctrl <= `ALU_ADD;
+                `LUI    : alu_ctrl <= `ALU_SLL;
+                `JAL    : alu_ctrl <= `ALU_ADD;
+                `JALR   : alu_ctrl <= `ALU_ADD;
+                `BRANCH : alu_ctrl <= {2'b01, funct3};
+                `LOAD   : alu_ctrl <= `ALU_ADD;
+                `STORE  : alu_ctrl <= `ALU_ADD;
                 default : alu_ctrl <= `ALU_NOP;
             endcase
         end
@@ -148,6 +138,7 @@ module cpu_idu (
     /**/
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n || flush_flag) begin
+            pc_en <= 1'b0;
             rs_en <= 2'b00;
             wr_en <= 1'b0;
             jmp_ctrl <= 3'b000;
@@ -157,6 +148,7 @@ module cpu_idu (
             imm0 <= 32'd0;
         end
         else if(wait_exe) begin
+            pc_en <= pc_en;
             rs_en <= rs_en;
             wr_en <= wr_en;
             jmp_ctrl <= jmp_ctrl;
@@ -168,6 +160,7 @@ module cpu_idu (
         else begin
             case (opcode)
                 `OP     : begin  // 基础整数运算-寄存器
+                    pc_en <= 1'b0;
                     rs_en <= 2'b11;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
@@ -177,6 +170,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `OP_IMM : begin   // 基础整数运算-立即数
+                    pc_en <= 1'b0;
                     rs_en <= 2'b01;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
@@ -188,7 +182,18 @@ module cpu_idu (
                     else
                         imm0 <= imm_i;
                 end
+                `AUIPC  : begin
+                    pc_en <= 1'b1;
+                    rs_en <= 2'b00;
+                    wr_en <= 1'b1;
+                    jmp_ctrl <= 3'b000;
+                    ram_ctrl <= 5'b00000;
+                    imm_en <= 2'b01;
+                    imm1 <= 32'd0;
+                    imm0 <= {imm_u, 12'b0};
+                end
                 `LUI    : begin
+                    pc_en <= 1'b0;
                     rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
@@ -198,6 +203,7 @@ module cpu_idu (
                     imm0 <= 32'd12;
                 end
                 `JAL    : begin
+                    pc_en <= 1'b1;
                     rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b010;
@@ -207,6 +213,7 @@ module cpu_idu (
                     imm0 <= decompr_en ? 32'd2 : 32'd4;
                 end
                 `JALR   : begin
+                    pc_en <= 1'b1;
                     rs_en <= 2'b00;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b110;
@@ -216,6 +223,7 @@ module cpu_idu (
                     imm0 <= decompr_en ? 32'd2 : 32'd4;
                 end
                 `BRANCH : begin
+                    pc_en <= 1'b0;
                     rs_en <= 2'b11;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b001;
@@ -225,6 +233,7 @@ module cpu_idu (
                     imm0 <= 32'd0;
                 end
                 `LOAD   : begin
+                    pc_en <= 1'b0;
                     rs_en <= 2'b01;
                     wr_en <= 1'b1;
                     jmp_ctrl <= 3'b000;
@@ -234,6 +243,7 @@ module cpu_idu (
                     imm0 <= {{20{imm_i[11]}}, imm_i};
                 end
                 `STORE  : begin
+                    pc_en <= 1'b0;
                     rs_en <= 2'b11;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b000;
@@ -243,6 +253,7 @@ module cpu_idu (
                     imm0 <= {{20{imm_s[11]}}, imm_s};
                 end
                 default : begin
+                    pc_en <= 1'b0;
                     rs_en <= 2'b00;
                     wr_en <= 1'b0;
                     jmp_ctrl <= 3'b000;

@@ -31,6 +31,7 @@
 `define     BRANCH      7'b1100011  // 分支指令集
 `define     JAL         7'b1101111  // 跳转并链接
 `define     JALR        7'b1100111  // 跳转并寄存器链接
+`define     AUIPC       7'b0010111  // pc加立即数
 `define     LUI         7'b0110111  // 高位立即数加载
 
 /*funct3*/
