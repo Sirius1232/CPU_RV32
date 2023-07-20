@@ -1,4 +1,5 @@
 `define     NOP         32'h00000013// nop指令
+`define     X0          5'd0
 
 `define     INT         2'b00
 `define     FP_S        2'b01
@@ -70,6 +71,7 @@
 `define     BRANCH      7'b1100011  // 分支指令集
 `define     JAL         7'b1101111  // 跳转并链接
 `define     JALR        7'b1100111  // 跳转并寄存器链接
+`define     AUIPC       7'b0010111  // pc加立即数
 `define     LUI         7'b0110111  // 高位立即数加载
 /*浮点相关*/
 `define     LOAD_FP     7'b0000111  // 加载浮点数

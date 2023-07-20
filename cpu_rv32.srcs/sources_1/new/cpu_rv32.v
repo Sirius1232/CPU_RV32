@@ -20,7 +20,7 @@ module cpu_rv32 (
         input       [31:0]  instr_load
     );
 
-    `define     STOP    7'b1111100
+    `define     STOP    32'b00000000011111110000000001111111
 
     wire    [15:0]      pc;
     wire    [31:0]      instruction;
@@ -44,13 +44,13 @@ module cpu_rv32 (
                         state <= IDLE;
                 end
                 LOAD : begin
-                    if(instr_load[6:0] == `STOP)
+                    if(instr_load == `STOP)
                         state <= RUN;
                     else
                         state <= LOAD;
                 end
                 RUN : begin
-                    if(instruction[6:0] == `STOP)
+                    if(instruction == `STOP)
                         state <= IDLE;
                     else
                         state <= RUN;
@@ -78,11 +78,11 @@ module cpu_rv32 (
     assign  loading = (state==LOAD) ? 1'b1 : 1'b0;
     assign  running = (state==RUN ) ? 1'b1 : 1'b0;
 
-    wire    [13:0]      addr_i;
-    assign  addr_i = {14{loading}}&lc[13:0] | {14{running}}&pc[13:0];
+    wire    [15:0]      addr_i;
+    assign  addr_i = {16{loading}}&lc | {16{running}}&pc;
 
     wire    [4:0]       ram_ctrl;
-    wire    [63:0]      ram_dout, ram_din;
+    wire    [31:0]      ram_dout, ram_din;
     wire    [31:0]      addr_d;
 
     cpu_core cpu_core_inst(
