@@ -82,8 +82,8 @@ module cpu_rv32 (
     assign  addr_i = {16{loading}}&lc | {16{running}}&pc;
 
     wire    [4:0]       ram_ctrl;
-    wire    [31:0]      ram_dout, ram_din;
-    wire    [31:0]      addr_d;
+    wire    [63:0]      ram_dout, ram_din;
+    wire    [63:0]      addr_d;
 
     cpu_core cpu_core_inst(
         .clk            (clk),
