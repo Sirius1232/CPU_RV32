@@ -27,9 +27,24 @@ module ram_data (
     assign  addr_3 = addr[15:2];
 
     wire                enable;
-    wire                wr_en;
+    reg     [3:0]       wr_en, wr_en_t;
     assign  enable = ram_ctrl[0];
-    assign  wr_en = ram_ctrl[1];
+    always @(*) begin
+        case (ram_ctrl[3:1])
+            3'b001  : wr_en_t = 4'b0001;
+            3'b011  : wr_en_t = 4'b0011;
+            3'b101  : wr_en_t = 4'b1111;
+            default : wr_en_t = 4'b0000;
+        endcase
+    end
+    always @(*) begin
+        case (addr[1:0])
+            2'b00   : wr_en = wr_en_t;
+            2'b01   : wr_en = {wr_en_t[2:0], wr_en_t[3]};
+            2'b10   : wr_en = {wr_en_t[1:0], wr_en_t[3:2]};
+            2'b11   : wr_en = {wr_en_t[0], wr_en_t[3:1]};
+        endcase
+    end
 
     reg     [2:0]       mask_code;
     reg     [1:0]       rd_order;
@@ -80,7 +95,7 @@ module ram_data (
     dram_8bit dram_8bit_inst_0 (
         .clka       (clk),
         .ena        (enable),
-        .wea        (wr_en),
+        .wea        (wr_en[0]),
         .addra      (addr_0),
         .dina       (din_0),
         .douta      (dout_0)
@@ -88,7 +103,7 @@ module ram_data (
     dram_8bit dram_8bit_inst_1 (
         .clka       (clk),
         .ena        (enable),
-        .wea        (wr_en),
+        .wea        (wr_en[1]),
         .addra      (addr_1),
         .dina       (din_1),
         .douta      (dout_1)
@@ -96,7 +111,7 @@ module ram_data (
     dram_8bit dram_8bit_inst_2 (
         .clka       (clk),
         .ena        (enable),
-        .wea        (wr_en),
+        .wea        (wr_en[2]),
         .addra      (addr_2),
         .dina       (din_2),
         .douta      (dout_2)
@@ -104,7 +119,7 @@ module ram_data (
     dram_8bit dram_8bit_inst_3 (
         .clka       (clk),
         .ena        (enable),
-        .wea        (wr_en),
+        .wea        (wr_en[3]),
         .addra      (addr_3),
         .dina       (din_3),
         .douta      (dout_3)
