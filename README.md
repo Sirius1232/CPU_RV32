@@ -13,8 +13,11 @@ In this project, the CPU adopts static branch prediction, and when jumping towar
 
 ```text
 cpu_rv32.doc/
+├── img/ ---> Images
+├── CPU-RV32.md ---> System design document
+└── InstructionImplementation.md ---> Instruction implementation document
 
 cpu_rv32.srcs/
-├── sim_1/new/ ---> Testbench file
-└── sources_1/new/ ---> Source file
+├── sim_1/new/ ---> Testbench files
+└── sources_1/new/ ---> Source files
 ```

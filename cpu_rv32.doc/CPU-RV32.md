@@ -12,7 +12,7 @@
 - 访存：实现对数据存储器的读写控制，以及数据长度控制
 - 写回：将执行/访存的结果写入寄存器
 
-<img src="D:\Typora\img\CPU-RV32\pipeline.svg" alt="pipeline" style="zoom:80%;" />
+<img src="img/pipeline.svg" alt="pipeline" style="zoom:80%;" />
 
 
 
@@ -28,7 +28,7 @@
 
 由下图可知，当分支指令完成`执行`后进入了`访存`阶段，此时在该分支下已经取出了两条指令，分别处于`执行`和`译码`两个阶段，冲刷流水线时需要将这两个模块的输出置零；而`取指`模块只需要将当前的`pc`值设置为分支预测时保存的另一种分支情况的`pc`值即可。
 
-<img src="D:\Typora\img\CPU-RV32\flush.svg" alt="flush" style="zoom:80%;" />
+<img src="img/flush.svg" alt="flush" style="zoom:80%;" />
 
 
 
@@ -48,7 +48,7 @@
 1. 将处于流水线各个阶段的指令依次使用`n`到`n-3`来编号（取指阶段尚未取出指令，不需要编号），如下图所示；
 2. 由于部分信号需要在后续流水线中使用（如`译码`阶段的输出等），所以在编写的程序时，一些需要锁存的信号统一规范编码，以其所处于的流水线阶段为命名开头（如传递到`访存`阶段的信号统一以`stp2_`开头）
 
-<img src="D:\Typora\img\CPU-RV32\data_conflict.svg" alt="DataConflict" style="zoom:80%;" />
+<img src="img/data_conflict.svg" alt="DataConflict" style="zoom:80%;" />
 
 ### 2. 访存的数据冲突问题
 
