@@ -1,0 +1,7 @@
+cpu_rv32.cache/
+cpu_rv32.hw/
+cpu_rv32.ip_user_files/
+cpu_rv32.runs/
+cpu_rv32.sim/
+cpu_rv32.srcs/sources_1/ip/
+cpu_rv32.xpr
