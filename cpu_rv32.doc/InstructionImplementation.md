@@ -6,7 +6,7 @@
 
 ### 1. 基础运算
 
-<img src="D:\Typora\img\指令详解及实现\instruction_I.png" alt="基础整数运算指令" style="zoom:50%;" />
+<img src="img/instruction_I.png" alt="基础整数运算指令" style="zoom:50%;" />
 
 基础整数运算指令包括加法、减法、逻辑左移、小于则置位、无符号小于则置位、按位异或、逻辑右移、算术右移、按位或、按位与等运算，各自有`I-type`、`R-type`两种指令。
 
@@ -17,7 +17,7 @@
 
 > opcode=7'b0110011（`R-type`），funct7=7'b0000001
 
-<img src="D:\Typora\img\指令详解及实现\instruction_M.png" alt="整数乘除法运算指令" style="zoom: 33%;" />
+<img src="img/instruction_M.png" alt="整数乘除法运算指令" style="zoom: 33%;" />
 
 乘除法指令只有`R-type`，包括乘法、求商、取余三类，都包含有/无符号数的计算。
 
@@ -36,7 +36,7 @@
 
 > opcode=7'b1100011
 
-<img src="D:\Typora\img\指令详解及实现\instruction_B.png" alt="条件分支指令" style="zoom:50%;" />
+<img src="img/instruction_B.png" alt="条件分支指令" style="zoom:50%;" />
 
 条件分支指令根据判断条件的真伪来选择是否跳转，判断条件包括等于、不等于、小于、大于等于、无符号小于、无符号大于等于六种。
 
@@ -45,7 +45,7 @@
 
 ### 2. 无条件跳转
 
-<img src="D:\Typora\img\指令详解及实现\instruction_J.png" alt="无条件跳转指令" style="zoom:50%;" />
+<img src="img/instruction_J.png" alt="无条件跳转指令" style="zoom:50%;" />
 
 无条件跳转指令有两条，跳转并链接`jal`、跳转并寄存器链接`jalr`
 
@@ -55,7 +55,7 @@
 
 ## 三、长立即数指令
 
-<img src="D:\Typora\img\指令详解及实现\instruction_U.png" alt="长立即数指令" style="zoom:50%;" />
+<img src="img/instruction_U.png" alt="长立即数指令" style="zoom:50%;" />
 
 寄存器的数据位宽为32bit，但`I-type`指令只能传递12bit的立即数，这就需要长立即数指令来实现高20bit的传递。
 
@@ -72,7 +72,7 @@
 
 ## 四、加载和存储指令
 
-<img src="D:\Typora\img\指令详解及实现\instruction_S.png" alt="加载和存储指令" style="zoom:50%;" />
+<img src="img/instruction_S.png" alt="加载和存储指令" style="zoom:50%;" />
 
 除了提供 32 位字（`lw`，`sw`）的加载和存储外，还支持加载有符号和无符号字节和半字（`lb`、`lbu`、`lh`、`lhu`）和存储字节和半字（`sb`、`sh`）。
 
